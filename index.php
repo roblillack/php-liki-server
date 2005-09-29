@@ -94,7 +94,7 @@ function saveChanges() {
   setStatus("saving....");
   var req = createRequest();
   var contentElement = document.getElementById("content");
-  req.open("POST", ".", false);
+  req.open("POST", "http://devel.burningsoda.com/liki/", false);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   req.send("action=edit&content="+contentElement.value);
   if (req.readyState == 4) { // completed
