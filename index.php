@@ -10,10 +10,10 @@ if (bs_request('action') == 'load') {
   exit;
 } elseif (bs_request('action') == 'edit') {
   $content = htmlspecialchars(bs_request('content', false));
-  trigger_error("content: ".$content);
+  //trigger_error("content: ".$content);
   $handle = false;
   for ($t = 0; $handle === false && $t < 10; $t++) {
-    trigger_error("try #".$t);
+    //trigger_error("try #".$t);
     $handle = fopen($filename, 'w');
     usleep(10000*$t);
   }
@@ -21,7 +21,7 @@ if (bs_request('action') == 'load') {
     fputs($handle, $content);
     fclose($handle);
   } else {
-    trigger_error("aaaah. could not get handle!");
+    //trigger_error("aaaah. could not get handle!");
   }
 }
 
@@ -32,7 +32,14 @@ echo XHTML_11_HEADER;
  <head>
   <title>liki &mdash; the LIve wiKI</title>
   <style type="text/css">
+  body {
+    background-color: #ddd;
+    text-align: center;
+  }
+
   h1 {
+    margin-bottom: 0px;
+    margin-top: 30px;
     font-style: normal;
     color: #777;
   }
@@ -41,16 +48,18 @@ echo XHTML_11_HEADER;
     color: black;
   }
   textarea {
-    background-color: black;
-    color: white;
+    background-color: white;
+    color: black;
     font-family: monospace;
     font-size: 12px;
-    border: 1px solid red;
+    font-weight: bold;
+    border: 1px solid #ccc;
     overflow: clip;
   }
   #status {
-    background-color: yellow;
-    color: black;
+    color: #777;
+    font-size: 9px;
+    font-family: sans-serif;
   }
   </style>
   <script type="text/javascript">
@@ -94,7 +103,7 @@ function saveChanges() {
   setStatus("saving....");
   var req = createRequest();
   var contentElement = document.getElementById("content");
-  req.open("POST", "http://devel.burningsoda.com/liki/", false);
+  req.open("POST", "<?php echo(bs_url()); ?>", false);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   req.send("action=edit&content="+contentElement.value);
   if (req.readyState == 4) { // completed
@@ -116,7 +125,7 @@ function loadChanges() {
   setStatus("checking for changes....");
   var req = createRequest();
   var contentElement = document.getElementById("content");
-  req.open("POST", "http://sickbox/modules/liki/", false);
+  req.open("POST", "<?php echo(bs_url()); ?>", false);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   req.send("action=load");
   if (req.readyState == 4) { // completed
@@ -142,7 +151,7 @@ function timedOut() {
   </script>
  </head>
  <body onLoad="setReady()">
-  <h1>liki &mdash; the <em>li</em>ve wi<em>ki</em></h1>
+  <h1><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
   <form action="." method="post">
    <textarea cols='80' rows='25' name='content' id="content"><?php if ($content === false) { @readfile($filename); } else { echo($content); } ?></textarea>
    <input type="hidden" name="action" value="edit" />
