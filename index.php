@@ -67,6 +67,7 @@ echo XHTML_11_HEADER;
   <script type="text/javascript">
 
 var oldContent = false;
+var lastSave = 0;
 
 function createRequest() {
   var req = false;
@@ -89,18 +90,20 @@ function createRequest() {
 function createSaveHandler(req) {
   return function() {
     if (req.readyState == 4 && req.status == 200) {
-      setStatus('Saved.');
+      setStatus("Saved. " + lastSave);
     }
   }
 }
 
-function createLoadHandler(req) {
+function createLoadHandler(req, starttime) {
   return function() {
     var contentElement = document.getElementById("content");
     if (req.readyState == 4 && req.status == 200) {
-      if (req.responseText != contentElement.value) {
+      if (lastSave > starttime) {
+        setStatus("Dropped.");
+      } else if (req.responseText != contentElement.value) {
         contentElement.value = req.responseText;
-        setStatus("Loaded.");
+        setStatus("Loaded. " + starttime);
       } else {
         setStatus("No changes.");
       }
@@ -110,6 +113,7 @@ function createLoadHandler(req) {
  
 function setStatus(text) {
   var status = document.getElementById("status");
+  //status.innerHTML = status.innerHTML+"<br/>\n\r"+text;
   status.innerHTML = text;
 }
 
@@ -123,20 +127,27 @@ function saveChanges() {
   setStatus("Saving....");
   var req = createRequest();
   var contentElement = document.getElementById("content");
+  var now = new Date();
+  var starttime = now.getTime();
+  lastSave = starttime;
   req.onreadystatechange = createSaveHandler(req);
   req.open("POST", "<?php echo(bs_url()); ?>", true);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  req.send("action=edit&content="+contentElement.value);
+  req.send("action=edit&content="+encodeURI(contentElement.value));
   setReady();
 }
 
 function loadChanges() {
   setStatus("checking for changes....");
   var req = createRequest();
-  req.onreadystatechange = createLoadHandler(req);
-  req.open("POST", "<?php echo(bs_url()); ?>", true);
+  var now = new Date();
+  var starttime = now.getTime();
+  req.onreadystatechange = createLoadHandler(req, starttime);
+  /*req.open("POST", "<?php echo(bs_url()); ?>", true);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  req.send("action=load");
+  req.send("action=load");*/
+  req.open("GET", "<?php echo(bs_url().'/'.$filename);?>", true);
+  req.send("");
   setReady();
 }
  
@@ -151,7 +162,7 @@ function timedOut() {
  </head>
  <body onLoad="setReady()">
   <h1><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
-  <form action="." method="post">
+  <form action="." method="post" accept-charset="UTF-8">
    <textarea cols='80' rows='25' name='content' id="content"><?php if ($content === false) { @readfile($filename); } else { echo($content); } ?></textarea>
    <input type="hidden" name="action" value="edit" />
   </form>
