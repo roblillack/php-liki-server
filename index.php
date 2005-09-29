@@ -96,6 +96,7 @@ function createSaveHandler(req) {
 
 function createLoadHandler(req) {
   return function() {
+    var contentElement = document.getElementById("content");
     if (req.readyState == 4 && req.status == 200) {
       if (req.responseText != contentElement.value) {
         contentElement.value = req.responseText;
@@ -132,7 +133,6 @@ function saveChanges() {
 function loadChanges() {
   setStatus("checking for changes....");
   var req = createRequest();
-  var contentElement = document.getElementById("content");
   req.onreadystatechange = createLoadHandler(req);
   req.open("POST", "<?php echo(bs_url()); ?>", true);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
