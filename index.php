@@ -23,6 +23,8 @@ if (bs_request('action') == 'load') {
   } else {
     //trigger_error("aaaah. could not get handle!");
   }
+  header("Content-type: text/plain; charset=UTF-8");
+  exit;
 }
 
 header("Content-type: text/html; charset=UTF-8");
@@ -84,13 +86,30 @@ function createRequest() {
   return req;
 }
 
+function createSaveHandler(req) {
+  return function() {
+    if (req.readyState == 4 && req.status == 200) {
+      setStatus('Saved.');
+    }
+  }
+}
+
+function createLoadHandler(req) {
+  return function() {
+    if (req.readyState == 4 && req.status == 200) {
+      if (req.responseText != contentElement.value) {
+        contentElement.value = req.responseText;
+        setStatus("Loaded.");
+      } else {
+        setStatus("No changes.");
+      }
+    }
+  }
+}
+ 
 function setStatus(text) {
   var status = document.getElementById("status");
   status.innerHTML = text;
-}
-
-function textChanged() {
-  setStatus("changed.");
 }
 
 function setReady() {
@@ -100,44 +119,24 @@ function setReady() {
 }
 
 function saveChanges() {
-  setStatus("saving....");
+  setStatus("Saving....");
   var req = createRequest();
   var contentElement = document.getElementById("content");
-  req.open("POST", "<?php echo(bs_url()); ?>", false);
+  req.onreadystatechange = createSaveHandler(req);
+  req.open("POST", "<?php echo(bs_url()); ?>", true);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   req.send("action=edit&content="+contentElement.value);
-  if (req.readyState == 4) { // completed
-    if (req.status == 200) { // HTTP OK
-      setStatus("Saved.");
-    } else {
-      setStatus("Server said: "+req.statusText);
-    }
-  } else {
-    setStatus("Error contacting server....");
-  }
   setReady();
-  /*setTimeout("setStatus('Ready.')", 1000);
-  isChanged = false;
-  setTimeout("timedOut()", 1000);*/
 }
 
 function loadChanges() {
   setStatus("checking for changes....");
   var req = createRequest();
   var contentElement = document.getElementById("content");
-  req.open("POST", "<?php echo(bs_url()); ?>", false);
+  req.onreadystatechange = createLoadHandler(req);
+  req.open("POST", "<?php echo(bs_url()); ?>", true);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   req.send("action=load");
-  if (req.readyState == 4) { // completed
-    if (req.status == 200) { // HTTP OK
-      contentElement.value = req.responseText;
-      setStatus("Loaded.");
-    } else {
-      setStatus("Server said: "+req.statusText);
-    }
-  } else {
-    setStatus("Error contacting server....");
-  }
   setReady();
 }
  
