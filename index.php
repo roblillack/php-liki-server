@@ -37,30 +37,33 @@ $content = false;
 $filename = 'data';
 
 if (bs_request('action') == 'freelock') {
-  if (liki_is_locked() == 2) {
+  enter_critical_section();
+  if (liki_is_locked() != 1) {
     free_liki();
     header("HTTP/1.1 204 lock released");
-    exit;
   } else {
     header("HTTP/1.1 403 could not release lock");
-    exit;
   }
+  leave_critical_section();
+  exit;
 } elseif (bs_request('action') == 'requestlock') {
+  enter_critical_section();
   if (liki_is_locked() == 1) {
     header("HTTP/1.1 403 could not acquire lock");
-    exit;
   } else {
     lock_liki();
     header("HTTP/1.1 204 lock acquired");
-    exit;
   }
+  leave_critical_section();
+  exit;
 } elseif (bs_request('action') == 'load') {
   header("Content-type: text/plain; charset=UTF-8");
   @readfile($filename);
   exit;
 } elseif (bs_request('action') == 'edit') {
+  enter_critical_section();
   if (liki_is_locked() == 2) {
-    $content = htmlspecialchars(bs_request('content', false));
+    $content = bs_request('content'); //htmlspecialchars(bs_request('content', false));
     //trigger_error("content: ".$content);
     $handle = false;
     for ($t = 0; $handle === false && $t < 10; $t++) {
@@ -76,11 +79,11 @@ if (bs_request('action') == 'freelock') {
     }
     lock_liki();
     header("HTTP/1.1 204 saved");
-    exit;
   } else {
     header("HTTP/1.1 403 liki is locked");
-    exit;
   }
+  leave_critical_section();
+  exit;
 }
 
 header("Content-type: text/html; charset=UTF-8");
@@ -263,6 +266,7 @@ function setStatus(text) {
 
 function onLoad() {
   setEditMode(false);
+  transmitChanges();
   interval = setInterval('transmitChanges()', timeout);
 }
 
@@ -299,19 +303,28 @@ function transmitChanges() {
 </html>
 <?php
 
-function liki_is_locked() {
-  global $filename;
+function enter_critical_section() {
+  global $sem;
   $semkey = ftok(__FILE__, "1");
   $sem = @sem_get($semkey, 1);
-  //if ($sem === false) return true;
-  //if (sem_acquire($sem) === false) return true;
-  @sem_acquire($sem);
+  if ($sem === false) return false;
+  if (@sem_acquire($sem) === false) return false;
+  return true;
+}
+
+function leave_critical_section() {
+  global $sem;
+  if (@sem_release($sem) === false) return false;
+  return true;
+  //@sem_remove($sem);
+}
+ 
+function liki_is_locked() {
+  global $filename;
   $lockname = $filename.'.lock';
   if (is_readable($lockname)) {
     if (filemtime($lockname) + 60 > time()) {
       $lockip = trim(implode('', file($lockfile)));
-      @sem_release($sem);
-      @sem_remove($sem);
       if ($lockip == $HTTP_SERVER_VARS['REMOTE_ADDR'])
         return 2; // locked by user
       else
@@ -320,18 +333,11 @@ function liki_is_locked() {
       unlink($lockname);
     }
   }
-  @sem_release($sem);
-  @sem_remove($sem);
   return 0;
 }
 
 function lock_liki() {
   global $filename, $HTTP_SERVER_VARS;
-  $semkey = ftok(__FILE__, "1");
-  $sem = @sem_get($semkey, 1);
-  //if ($sem === false) return false;
-  //if (sem_acquire($sem) === false) return false;
-  @sem_acquire($sem);
   $lockname = $filename.'.lock';
   $handle = false;
   $handle = fopen($lockname, 'w');
@@ -339,24 +345,15 @@ function lock_liki() {
     fputs($handle, $HTTP_SERVER_VARS['REMOTE_ADDR']);
     fclose($handle);
   } 
-  @sem_release($sem);
-  @sem_remove($sem);
   return true;
 }
 
 function free_liki() {
   global $filename, $HTTP_SERVER_VARS;
-  $semkey = ftok(__FILE__, "1");
-  $sem = @sem_get($semkey, 1);
-  //if ($sem === false) return false;
-  //if (sem_acquire($sem) === false) return false;
-  @sem_acquire($sem);
   $lockname = $filename.'.lock';
   if (file_exists($lockname)) {
     unlink($lockname);
   }
-  @sem_release($sem);
-  @sem_remove($sem);
   return true;
 }
 
