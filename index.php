@@ -36,7 +36,16 @@ require('bs_utils.php');
 $content = false;
 $filename = 'data';
 
-if (bs_request('action') == 'freelock') {
+if (bs_request('action') == 'realtime') {
+  header("Content-type: text/plain; charset=UTF-8");
+  for ($i = 0; $i < 29; $i++) {
+    echo ">> ".liki_is_locked()."\n";
+    ob_flush();
+    flush();
+    sleep(1);
+  }
+  exit;
+} elseif (bs_request('action') == 'freelock') {
   enter_critical_section();
   if (liki_is_locked() != 1) {
     free_liki();
@@ -68,12 +77,12 @@ if (bs_request('action') == 'freelock') {
     $handle = false;
     for ($t = 0; $handle === false && $t < 10; $t++) {
       //trigger_error("try #".$t);
-      $handle = fopen($filename, 'w');
+      $handle = @fopen($filename, 'w');
       usleep(10000*$t);
     }
     if ($handle) {
-      fputs($handle, $content);
-      fclose($handle);
+      @fputs($handle, $content);
+      @fclose($handle);
     } else {
       //trigger_error("aaaah. could not get handle!");
     }
@@ -278,7 +287,7 @@ function transmitChanges() {
     oldContent = contentElement.value;
     req.onreadystatechange = createSaveHandler(req);
     req.open("POST", "<?php echo(bs_url()); ?>", true);
-    req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
     req.send("action=edit&content="+encodeURI(contentElement.value));
   } else {
     setStatus("Checking for changes....");
