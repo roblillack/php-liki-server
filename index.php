@@ -18,6 +18,7 @@ if (bs_request('action') == 'freelock') {
   } else {
     header("HTTP/1.1 403 could not release lock");
   }
+  $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'requestlock') {
   $newkey = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time());
@@ -28,6 +29,7 @@ if (bs_request('action') == 'freelock') {
   } else {
     header("HTTP/1.1 403 could not acquire lock");
   }
+  $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'load') {
   header("Content-type: application/xml; charset=UTF-8");
@@ -37,6 +39,7 @@ if (bs_request('action') == 'freelock') {
   echo "<content><![CDATA[".$p['content']."]]></content>\n";
   echo "<timestamp>".$p['timestamp']."</timestamp>\n";
   echo "</liki>\n";
+  $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'edit') {
   if ($key && $b->updatePage($page, $key, bs_request('content', false))) {
@@ -44,6 +47,7 @@ if (bs_request('action') == 'freelock') {
   } else {
     header("HTTP/1.1 403 liki is locked");
   }
+  $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'saveandfree') {
   if ($key && $b->updatePage($page, $key, bs_request('content', false))
@@ -52,6 +56,7 @@ if (bs_request('action') == 'freelock') {
   } else {
     header("HTTP/1.1 403 saving/releasing not possible");
   }
+  $b->closeConnection();
   exit;
 }
 
@@ -351,6 +356,9 @@ function transmitChanges() {
  </body>
 </html>
 <?php
+
+$b->closeConnection();
+exit;
 
 /*function enter_critical_section() {
   global $sem;

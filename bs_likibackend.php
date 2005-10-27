@@ -177,5 +177,9 @@ class bsLikiBackend {
       return true;
     }
   }
+
+  function closeConnection() {
+    mysql_close($this->dbh);
+  }
 }
 ?>
