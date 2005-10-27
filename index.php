@@ -1,97 +1,57 @@
 <?php
-require('bs_utils.php');
+require('_classes/bs_utils.php');
+require('bs_likibackend.php');
 
-/*
+$key = bs_request('key', false);
+if (strlen($key) != 32) {
+  //$key = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time());
+  $key = false;
+}
 
-      anforderung lock
-            |
-            |
-         ist schon
-         gelockt?   --- ja ---> ablehnung -----> client liest regelmäßig.
-            |                                          -+
-            |                                        -- ---
-          nein                                     --  +   -+
-            |                                    --    |    +-+
-            |                                  --      |      |
-       server generiert                                |
-       eindeutigen key                                 |
-       und speichert ihn                               +
-       in blbla.lock                                   |
-       und schickt key an                              |
-       client.                                         |
-           |                                           |
-           |                                          ++
-     client sendet change                             |
-     messages an den server                           ++
-     der ändert NUR, wenn                              |
-     der richtige key dabei                            |
-     ist.                                              |
-           |                                           ++
-           |                                            |
-      client sendet unlock                             -+
-      aufforderung mit key -----------------------------
+$page = 'testpage';
 
-*/
+$b = new bsLikiBackend();
 
-$content = false;
-$filename = 'data';
-
-if (bs_request('action') == 'realtime') {
-  header("Content-type: text/plain; charset=UTF-8");
-  for ($i = 0; $i < 29; $i++) {
-    echo ">> ".liki_is_locked()."\n";
-    ob_flush();
-    flush();
-    sleep(1);
-  }
-  exit;
-} elseif (bs_request('action') == 'freelock') {
-  enter_critical_section();
-  if (liki_is_locked() != 1) {
-    free_liki();
+if (bs_request('action') == 'freelock') {
+  if ($key && $b->freePage($page, $key)) {
     header("HTTP/1.1 204 lock released");
   } else {
     header("HTTP/1.1 403 could not release lock");
   }
-  leave_critical_section();
   exit;
 } elseif (bs_request('action') == 'requestlock') {
-  enter_critical_section();
-  if (liki_is_locked() == 1) {
-    header("HTTP/1.1 403 could not acquire lock");
+  $newkey = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time());
+  if ($b->lockPage($page, $newkey)) {
+    //header("HTTP/1.1 204 lock acquired");
+    header('Content-type: text/plain; charset=UTF-8');
+    echo($newkey);
   } else {
-    lock_liki();
-    header("HTTP/1.1 204 lock acquired");
+    header("HTTP/1.1 403 could not acquire lock");
   }
-  leave_critical_section();
   exit;
 } elseif (bs_request('action') == 'load') {
-  header("Content-type: text/plain; charset=UTF-8");
-  @readfile($filename);
+  header("Content-type: application/xml; charset=UTF-8");
+  $p = $b->getPage($page);
+  echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+  echo "<liki>\n";
+  echo "<content><![CDATA[".$p['content']."]]></content>\n";
+  echo "<timestamp>".$p['timestamp']."</timestamp>\n";
+  echo "</liki>\n";
   exit;
 } elseif (bs_request('action') == 'edit') {
-  enter_critical_section();
-  if (liki_is_locked() == 2) {
-    $content = bs_request('content'); //htmlspecialchars(bs_request('content', false));
-    //trigger_error("content: ".$content);
-    $handle = false;
-    for ($t = 0; $handle === false && $t < 10; $t++) {
-      //trigger_error("try #".$t);
-      $handle = @fopen($filename, 'w');
-      usleep(10000*$t);
-    }
-    if ($handle) {
-      @fputs($handle, $content);
-      @fclose($handle);
-    } else {
-      //trigger_error("aaaah. could not get handle!");
-    }
-    lock_liki();
+  if ($key && $b->updatePage($page, $key, bs_request('content', false))) {
     header("HTTP/1.1 204 saved");
   } else {
     header("HTTP/1.1 403 liki is locked");
   }
-  leave_critical_section();
+  exit;
+} elseif (bs_request('action') == 'saveandfree') {
+  if ($key && $b->updatePage($page, $key, bs_request('content', false))
+      && $b->freePage($page, $key)) {
+    header("HTTP/1.1 204 saved and lock released");
+  } else {
+    header("HTTP/1.1 403 saving/releasing not possible");
+  }
   exit;
 }
 
@@ -101,72 +61,127 @@ echo XHTML_11_HEADER;
 ?>
  <head>
   <title>liki &mdash; the LIve wiKI</title>
+  <script language="JavaScript" type="text/javascript" src="html2xhtml.js"></script>
+  <script language="JavaScript" type="text/javascript" src="richtext.js"></script>
   <style type="text/css">
   body {
-    background-color: #ddd;
+    background-color: #eee;
     text-align: center;
+    /*overflow: hidden;*/
+    margin: 0;
   }
 
-  h1 {
-    margin-bottom: 0px;
-    margin-top: 30px;
+  body>h1 {
+    position: absolute;
+    top: 2px;
+    left: 5px;
     font-style: normal;
-    color: #777;
+    color: #c00;
+    z-index:50;
+    font-family: sans-serif;
+    font-size: 16px;
+    margin: 0;
   }
   h1 em {
     font-style: normal;
     color: black;
   }
-  textarea {
-    background-color: white;
-    color: black;
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: bold;
-    border: 1px solid #ccc;
-    overflow: clip;
-  }
-  form p {
-    font-family: sans-serif;
-    font-size: 20px;
+  #editchecker {
+    display: block;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    z-index: 20;
+    height: 12px;
+    padding: 0;
     margin: 0;
+    overflow: hidden;
+    font-size: 10px;
+    font-family: sans-serif;
+    padding-left: 2px;
+    padding-right: 2px;
   }
-  #cbEdit {
-    border: 1px solid #ccc;
-    width: 20px;
-    height: 20px;
+  #editchecker:hover {
+    cursor: pointer;
+    background: black;
+    color: white;
+    text-decoration: none;
   }
   #status {
+    position: absolute;
+    width: 100%;
+    height: 12px;
+    background-color: white;
+    left: 0;
+    top: 0;
+    z-index: 10;
+    overflow: hidden;
+
     color: #777;
-    font-size: 9px;
+    font-size: 10px;
     font-family: sans-serif;
+  }
+  #content, #viewcontent {
+    text-align: left;
+    color: #333;
+    font-family: sans-serif;
+    font-size: 12px;
+    /*overflow: scroll;*/
+    padding: 0px;
+    border: 0;
+  }
+
+  #viewcontent {
+    margin: 25px;
+    margin-top: 50px;
+  }
+
+  #content {
+    background-color: white;
+    position: absolute;
+    top: 12px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    z-index: 1;
+    margin: 10px;
+    visibility: hidden;
   }
   </style>
   <script type="text/javascript">
 
-// whether or not, we are editing (ie. have a lock)
-var editMode = false;
-// the key to change data on the server
-var lockKey = '';
-// timeout between loadings/savings
 var timeout = 5000;
-var interval = false;
+var editMode;
+var interval;
+var lockKey;
+var oldContent;
 
-var oldContent = false;
+//initRTE("rte/images/", "", "", true);
 
 function setEditMode(onoff) {
   var contentElement = document.getElementById("content");
-  var checker = document.getElementById("cbEdit");
+  var view = document.getElementById('viewcontent');
+  var checker = document.getElementById("editchecker");
+  var body = document.getElementById("mainbody");
 
   if (onoff == false) {
-    contentElement.style.backgroundColor = '#eee';
-    contentElement.readOnly = true;
-    checker.checked = false;
+    contentElement.style.visibility = 'hidden';
+    view.style.display = 'block';
+    //contentElement.style.backgroundColor = '#eee';
+    //contentElement.readOnly = true;
+    checker.style.backgroundColor = 'white';
+    checker.style.color = 'black';
+    body.style.overflow = 'auto';
     setStatus('Ready.');
   } else {
-    contentElement.style.backgroundColor = 'white';
-    contentElement.readOnly = false;
-    checker.checked = true;
+    contentElement.style.visibility = 'visible';
+    view.style.display = 'none';
+    //contentElement.style.backgroundColor = 'white';
+    //contentElement.readOnly = false;
+    checker.style.backgroundColor = 'red';
+    checker.style.color = 'white';
+    //checker.checked = true;
+    body.style.overflow = 'hidden';
     setStatus('Editing...');
   }
   editMode = onoff;
@@ -182,16 +197,17 @@ function switchEditMode() {
     req.send("action=requestlock");
     setStatus('trying to acquire lock');
     //setEditMode(true);
+    //saveChanges();
   } else {
-    // save all changes and give up lock
-    transmitChanges();
-    // create lock request
+    setStatus("saving and freeing lock....");
     var req = createRequest();
+    var contentElement = document.getElementById("content");
+    oldContent = contentElement.value;
+    document.getElementById("viewcontent").innerHTML = oldContent;
     req.onreadystatechange = createFreeLockHandler(req);
     req.open("POST", "<?php echo(bs_url()); ?>", true);
-    req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    req.send("action=freelock");
-    setStatus('freeing lock');
+    req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+    req.send("action=saveandfree&key="+lockKey+"&content="+encodeURIComponent(contentElement.value));
   }
 }
 
@@ -216,11 +232,12 @@ function createRequest() {
 function createRequestLockHandler(req) {
   return function() {
     if (req.readyState == 4) {
-      if (req.status == 204) {
+      //alert("requestLock status: "+req.status);
+      if (req.status == 200) {
         lockKey = req.responseText;
         setEditMode(true);
       } else {
-        lockKey = '';
+        lockKey = false;
         setEditMode(false);
       }
     }
@@ -231,7 +248,7 @@ function createFreeLockHandler(req) {
   return function() {
     if (req.readyState == 4) {
       if (req.status == 204) {
-        lockKey = '';
+        lockKey = false;
         setEditMode(false);
       } else {
         setEditMode(true);
@@ -245,6 +262,11 @@ function createSaveHandler(req) {
     if (req.readyState == 4) {
       if (req.status == 204) {
         setStatus("Saved.");
+        if (editMode == false) {
+          setEditMode(true);
+        }
+      } else {
+        setEditMode(false);
       }
     }
   }
@@ -256,8 +278,11 @@ function createLoadHandler(req) {
     if (req.readyState == 4) {
       if (editMode == false) {
         if (req.status == 200) {
-          if (req.responseText != contentElement.value) {
-            contentElement.value = req.responseText;
+          //text = req.responseText;
+          text = req.responseXML.documentElement.getElementsByTagName('content')[0].firstChild.nodeValue;
+          if (text != contentElement.value) {
+            contentElement.value = text;
+            document.getElementById("viewcontent").innerHTML = text;
             setStatus("Loaded.");
           } else {
             setStatus("No changes.");
@@ -274,45 +299,60 @@ function setStatus(text) {
 }
 
 function onLoad() {
+  interval = false;
+  lockKey = false;
+  oldContent = false;
   setEditMode(false);
   transmitChanges();
   interval = setInterval('transmitChanges()', timeout);
 }
 
+function saveChanges() {
+  setStatus("Saving....");
+  var req = createRequest();
+  var contentElement = document.getElementById("content");
+  oldContent = contentElement.value;
+  document.getElementById("viewcontent").innerHTML = oldContent;
+  req.onreadystatechange = createSaveHandler(req);
+  req.open("POST", "<?php echo(bs_url()); ?>", true);
+  req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+  req.send("action=edit&key="+lockKey+"&content="+encodeURIComponent(contentElement.value));
+}
+
 function transmitChanges() {
   if (editMode == true) {
-    setStatus("Saving....");
-    var req = createRequest();
-    var contentElement = document.getElementById("content");
-    oldContent = contentElement.value;
-    req.onreadystatechange = createSaveHandler(req);
-    req.open("POST", "<?php echo(bs_url()); ?>", true);
-    req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-    req.send("action=edit&content="+encodeURI(contentElement.value));
+    saveChanges();
   } else {
     setStatus("Checking for changes....");
     var req = createRequest();
     req.onreadystatechange = createLoadHandler(req);
-    req.open("GET", "<?php echo(bs_url().'/'.$filename);?>", true);
-    req.send("");
+    req.open("POST", "<?php echo(bs_url());?>", true);
+    req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+    req.send("action=load");
   }
 }
   </script>
  </head>
- <body onLoad="onLoad()">
+ <body id="mainbody" onLoad="onLoad()">
   <h1><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
-  <form action="." method="post" accept-charset="UTF-8">
-   <p>edit: <input type="checkbox" id="cbEdit" onClick="switchEditMode()" /></p>
-   <textarea cols='80' rows='25' name='content' id="content"></textarea>
-   <input type="hidden" name="action" value="edit" />
+  <a id="editchecker" onClick="switchEditMode()">edit</a>
+  <!--<script language="JavaScript" type="text/javascript">-->
+  <!--
+  // Usage: writeRichText(fieldname, html, width, height, buttons, readOnly)
+  writeRichText('content', '', 520, 200, false, false);
+  // -->
+  <!--</script>-->
+  <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
+   <textarea name='content' id="content"></textarea>
   </form>
+  <div id='viewcontent'></div>
   <div id='status'></div>
   <div id='changer'></div>
  </body>
 </html>
 <?php
 
-function enter_critical_section() {
+/*function enter_critical_section() {
   global $sem;
   $semkey = ftok(__FILE__, "1");
   $sem = @sem_get($semkey, 1);
@@ -364,5 +404,5 @@ function free_liki() {
     unlink($lockname);
   }
   return true;
-}
-
+}*/
+?>
