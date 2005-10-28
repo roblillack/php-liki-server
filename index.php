@@ -34,12 +34,16 @@ if (bs_request('action') == 'freelock') {
 } elseif (bs_request('action') == 'load') {
   header("Content-type: application/xml; charset=UTF-8");
   $p = $b->getPage($page);
-  $c = $p['content'];
-  $c = str_replace("\n", "]]><![CDATA[", $p['content']);
+  $c = explode("\n", $p['content']);
+  //$c = str_replace("\n", "]]><![CDATA[", $p['content']);
   echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
   echo "<liki>\n";
-  echo "<content><![CDATA[$c]]></content>\n";
-  echo "<timestamp>".$p['timestamp']."</timestamp>\n";
+  // NO newlines after the CDATAs because of browserbug in opera!
+  echo " <content xml:space=\"preserve\">";
+  foreach ($c as $row)
+    echo "<![CDATA[$row]]>";
+  echo "</content>\n";
+  echo " <timestamp>".$p['timestamp']."</timestamp>\n";
   echo "</liki>\n";
   $b->closeConnection();
   exit;

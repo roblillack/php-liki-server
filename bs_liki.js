@@ -74,7 +74,6 @@ function createRequestLockHandler(req) {
     if (req.readyState == 4) {
       if (req.status == 200) {
         lockKey = req.responseText;
-        alert('key: _'+lockKey+"_");
         setEditMode(true);
       } else {
         lockKey = false;
@@ -100,16 +99,42 @@ function createFreeLockHandler(req) {
 function createSaveHandler(req) {
   return function() {
     if (req.readyState == 4) {
-      if (req.status == 204) {
+      //alert("save-status: "+req.status);
+      if (req.status == 403) {
+        setEditMode(false);
+      } else {
+        // eigentlich 204
         setStatus("Saved.");
         if (editMode == false) {
           setEditMode(true);
         }
-      } else {
-        setEditMode(false);
       }
     }
   }
+}
+
+function extractContent(xmldoc) {
+  var content = '';
+  var nodearray;
+  var i;
+  var row;
+  
+  nodearray = xmldoc.documentElement.getElementsByTagName('content');
+  if (nodearray.length != 1) return '';
+  nodearray = nodearray[0].childNodes;
+  
+  for (i = 0; i < nodearray.length; i++) {
+    // nur CDATA-Typen rauspicken...
+    if (nodearray[i].nodeType != 4) continue;
+    // einige browser filtern selbst aus CDATA die newlines raus,
+    // darum kommt jede zeile als einzelne node und wir stellen
+    // sicher, dass keine newlines mehr drin sind...
+    row = nodearray[i].data.replace("\n", "");
+    // und fügen sie dann selbst an (egal, ob welche da waren, oder nicht)
+    content = content + row + "\n";
+  }
+
+  return content;
 }
 
 function createLoadHandler(req) {
@@ -118,16 +143,12 @@ function createLoadHandler(req) {
     if (req.readyState == 4) {
       if (editMode == false) {
         if (req.status == 200) {
-          // text = req.responseXML.documentElement.getElementsByTagName('content')[0].firstChild.nodeValue;
-          /* weil konqueror ein newlines selbst aus [CDATA] rausfiltert(!), kriegt
-           * jede zeile auf dem server einen neuen textknoten.... */
-          var text = '';
-          var a = req.responseXML.documentElement.getElementsByTagName('content')[0].childNodes;
-          for (var i = 0; i < a.length; i++) text = text + a[i].nodeValue + "\r\n";
+          var text = extractContent(req.responseXML);
 
-          if (text != contentElement.value) {
+          if (text != oldContent) {
             contentElement.value = text;
             document.getElementById("viewcontent").innerHTML = text;
+            oldContent = text;
             setStatus("Loaded.");
           } else {
             setStatus("No changes.");
