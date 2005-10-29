@@ -34,13 +34,27 @@ h1 em {
   font-family: sans-serif;
   padding-left: 2px;
   padding-right: 2px;
+  cursor: pointer;
 }
 #editchecker:hover {
-  cursor: pointer;
   background: black;
   color: white;
   text-decoration: none;
 }
+
+.readmode {
+  color: black;
+  background-color: white;
+}
+.transmitting {
+  color: yellow;
+  background-color: #555;
+}
+.editmode {
+  color: white;
+  background-color: red;
+}
+  
 #status {
   position: absolute;
   width: 100%;
@@ -72,7 +86,6 @@ h1 em {
 
 #content {
   background-color: white;
-  visibility: hidden;
   display: block;
   position: absolute;
   left: 0;
@@ -84,6 +97,7 @@ h1 em {
 }
 
 #contenteditor {
+  visibility: hidden;
   position: absolute;
   top: 12px;
   left: 0px;
@@ -91,5 +105,18 @@ h1 em {
   bottom: 0px;
   z-index: 1;
   margin: 10px;
+}
+
+table {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+th {
+  padding: 5px;
+  padding-left: 20px;
+  padding-right: 20px;
+  background-color: #555;
+  color: white;
 }
 

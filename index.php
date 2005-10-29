@@ -12,7 +12,17 @@ $page = 'testpage';
 
 $b = new bsLikiBackend();
 
-if (bs_request('action') == 'freelock') {
+if (bs_request('action') == 'plainload') {
+  $p = $b->getPage($page);
+  header('Content-type: text/plain; charset=UTF-8');
+  echo($p['content']);
+  exit;
+} elseif (bs_request('action') == 'timestamp') {
+  $p = $b->getPage($page);
+  header('Content-type: text/plain; charset=UTF-8');
+  echo($p['timestamp']);
+  exit;
+} elseif (bs_request('action') == 'freelock') {
   if ($key && $b->freePage($page, $key)) {
     header("HTTP/1.1 204 lock released");
   } else {
@@ -32,24 +42,32 @@ if (bs_request('action') == 'freelock') {
   $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'load') {
-  header("Content-type: application/xml; charset=UTF-8");
+  header("Content-type: text/xml; charset=UTF-8");
   $p = $b->getPage($page);
-  $c = explode("\n", $p['content']);
+  //$c = explode("\n", $p['content']);
   //$c = str_replace("\n", "]]><![CDATA[", $p['content']);
   echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
   echo "<liki>\n";
   // NO newlines after the CDATAs because of browserbug in opera!
-  echo " <content xml:space=\"preserve\">";
-  foreach ($c as $row)
-    echo "<![CDATA[$row]]>";
+  echo " <content>";
+  //echo bs_xmlencode($p['content']);
+  //foreach ($p['content'] as $row) {
+    echo str_replace(array('&', '<', '>', ' ', "\n", "\r"),
+                       array('&amp;', '&lt;', '&gt;', '<s/>', "<n/>", ""),
+                       $p['content']);
+  //row."\n")."\n";
+  //echo "<![CDATA[$row]]>";
   echo "</content>\n";
   echo " <timestamp>".$p['timestamp']."</timestamp>\n";
   echo "</liki>\n";
   $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'edit') {
-  if ($key && $b->updatePage($page, $key, bs_request('content', false))) {
-    header("HTTP/1.1 204 saved");
+  if ($key && $b->updatePage($page, $key, str_replace("\r", "", bs_request('content', false)))) {
+    header('Content-type: text/plain; charset=UTF-8');
+    echo("ok\n");
+    // impossible because konqueror BROWSER BUG:
+    //header("HTTP/1.1 204 saved");
   } else {
     header("HTTP/1.1 403 liki is locked");
   }
@@ -58,7 +76,10 @@ if (bs_request('action') == 'freelock') {
 } elseif (bs_request('action') == 'saveandfree') {
   if ($key && $b->updatePage($page, $key, bs_request('content', false))
       && $b->freePage($page, $key)) {
-    header("HTTP/1.1 204 saved and lock released");
+    header('Content-type: text/plain; charset=UTF-8');
+    echo("ok\n");
+    // impossible because konqueror BROWSER BUG:
+    //header("HTTP/1.1 204 saved and lock released");
   } else {
     header("HTTP/1.1 403 saving/releasing not possible");
   }
@@ -78,13 +99,13 @@ echo XHTML_11_HEADER;
  </head>
  <body id="mainbody" onLoad="initLiki('<?=(bs_url());?>', 5000)">
   <h1><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
-  <a id="editchecker" onClick="switchEditMode()">edit</a>
+  <a id="editchecker" class="readmode" onClick="switchEditMode()">edit</a>
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <textarea name='content' id="content"></textarea>
   </form>
   <div id='viewcontent'></div>
   <div id='status'></div>
-  <div id='changer'></div>
+  <!--<div id='changer'></div>-->
  </body>
 </html>
 <?php
