@@ -12,7 +12,16 @@ $page = 'testpage';
 
 $b = new bsLikiBackend();
 
-if (bs_request('action') == 'plainload') {
+if (bs_request('action') == 'htmlload') {
+  $p = $b->getPage($page);
+  header('X-LIKI-Timestamp: '.$p['timestamp']);
+  header('Content-type: text/html; charset=UTF-8');
+  // this is just a fix for a safari bug.
+  // the client MUST kill this line!
+  echo("<"."?xml version=\"1.0\" encoding=\"utf-8\"?".">\n");
+  echo($p['content']);
+  exit;
+} elseif (bs_request('action') == 'plainload') {
   $p = $b->getPage($page);
   header('Content-type: text/plain; charset=UTF-8');
   echo($p['content']);
@@ -91,17 +100,21 @@ header("Content-type: text/html; charset=UTF-8");
 echo XML_HEADER;
 echo XHTML_11_HEADER;
 ?>
+<html>
  <head>
   <title>liki &mdash; the LIve wiKI</title>
-  <script language="JavaScript" type="text/javascript" src="bs_liki.js"></script>
+  <script type="text/javascript" src="bs_liki.js"></script>
   <link rel="stylesheet" type="text/css" href="liki.css" />
 
  </head>
  <body id="mainbody" onLoad="initLiki('<?=(bs_url());?>', 5000)">
-  <h1><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
-  <a id="editchecker" class="readmode" onClick="switchEditMode()">edit</a>
+  <h1 id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
+  <div id="toolbar">
+   <a id="editchecker" href="#" class="readmode" onClick="switchEditMode()">edit</a>
+   <!-- | <a href="http://ruckelfotze.de/">ruckelfotze</a> -->
+  </div>
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
-   <textarea name='content' id="content"></textarea>
+   <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
   <div id='viewcontent'></div>
   <div id='status'></div>

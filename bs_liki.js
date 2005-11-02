@@ -34,12 +34,14 @@ function setEditMode(onoff) {
     contentElement.style.visibility = 'hidden';
     view.style.display = 'block';
     checker.setAttribute('class', 'readmode');
+    checker.innerHTML = 'edit';
     body.style.overflow = 'auto';
     setStatus('Ready.');
   } else {
     contentElement.style.visibility = 'visible';
     view.style.display = 'none';
     checker.setAttribute('class', 'editmode');
+    checker.innerHTML = 'save &amp; quit';
     body.style.overflow = 'hidden';
     setStatus('Editing...');
   }
@@ -138,7 +140,7 @@ function extractContent(xmldoc) {
   var i;
   var row;
   
-  nodearray = xmldoc.documentElement.getElementsByTagName('content');
+  nodearray = xmldoc/*.documentElement*/.getElementsByTagName('content');
   if (nodearray.length != 1) return '';
   nodearray = nodearray[0].childNodes;
   
@@ -163,7 +165,8 @@ function createTimestampHandler(req) {
       var r = createRequest();
       r.onreadystatechange = createLoadHandler(r/*, req.responseText*/);
       //r.open("GET", mainURI+"?action=plainload", true);
-      r.open("GET", mainURI+"?action=load", true);
+      r.open("GET", mainURI+"?action=htmlload", true);
+      //r.open("GET", mainURI+"?action=load", true);
       r.send("");
     } else {
       setStatus("No changes.");
@@ -177,13 +180,15 @@ function createLoadHandler(req/*, ts*/) {
     if (req.readyState == 4) {
       if (editMode == false) {
         if (req.status == 200) {
-          var text = extractContent(req.responseXML);
-          //var text = req.responseText;
+          //var text = extractContent(req.responseXML);
+          var text = req.responseText;
+          // KHTML BUG:
+          text = text.slice(text.indexOf("\n") + 1);
           var contentElement = document.getElementById("content");
           contentElement.value = text;
           document.getElementById("viewcontent").innerHTML = text;
-          lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
-          //lastTimestamp = ts;
+          lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
+          //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
         }
       }
