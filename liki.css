@@ -137,6 +137,30 @@ th {
 
 
 /* --- content --- */
+#viewcontent > h1  {
+  position: relative;
+  top: 0px;
+  left: 0px;
+  font-family: 'Bitstream Vera Sans', 'MS Trebuchet', 'Verdana', 'Arial', sans-serif;
+  font-weight: normal;
+  letter-spacing: -2px;
+  font-size: 22px;
+  color: black;
+  border-bottom: 1px solid #ccc;
+  background-color: #eef;
+}
+
+#viewcontent > h1 a.backtotop {
+  font-size: 10px;
+  position: absolute;
+  right: 0px;
+  top: 20px;
+  color: #999;
+  display: block;
+  overflow: hidden;
+  text-decoration: none;
+}
+
 li.termin  {
   padding: 10px;
   border: 1px solid #ddd;
