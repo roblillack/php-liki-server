@@ -135,3 +135,34 @@ th {
   color: white;
 }
 
+
+/* --- content --- */
+li.termin  {
+  padding: 10px;
+  border: 1px solid #ddd;
+  background-color: white;
+  margin-bottom: 10px;
+}
+
+#terminplanheute {
+  background-color: #fdd;
+}
+
+li.termin div.termindatum {
+  font-size: 10px;
+  margin: 0;
+}
+
+li.termin h1 {
+  margin-top: 0;
+  font-size: 18px;
+  color: #d33;
+}
+
+li.termin h2 {
+  font-size: 14px;
+  color: #555;
+  margin-top: 7px;
+  margin-bottom: 5px;
+}
+
