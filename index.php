@@ -106,7 +106,7 @@ echo XHTML_11_HEADER;
   <script type="text/javascript" src="bs_liki.js"></script>
   <link rel="stylesheet" type="text/css" href="liki.css" />
   <link rel="icon" href="favicon.ico" type="image/ico" />
-  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="Shortcut Icon" type="image/x-icon" href="<?=(bs_baseurl());?>/favicon.ico" />
  </head>
  <body id="mainbody" onLoad="initLiki('<?=(bs_url());?>', 5000)">
   <h1 id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
