@@ -1,7 +1,7 @@
 /*
  * bs|liki by Robert Lillack.
  * 
- * (c) 2005 by burningsoda.com
+ * ©2005-2006 burningsoda.com
  */
 
 var mainURI;
@@ -9,7 +9,9 @@ var timeout;
 var editMode;
 var interval;
 var lockKey;
-// var oldContent;
+// pagecontent (unformatiert)
+var pageContent;
+var oldContent;
 var transmitting;
 var lastTimestamp;
 
@@ -23,6 +25,11 @@ var lastTimestamp;
     e.style.left = e.style.left + width*2 + 1;
   }
 }*/
+
+function formatContent(input) {
+  baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
+  return input.replace(/\[\[([a-zA-Z0-9\-äöüßÄÖÜ]+)\]\]/g, '<a href="'+baseURI+'/$1">$1</a>');
+}
 
 function setEditMode(onoff) {
   var contentElement = document.getElementById("contenteditor");
@@ -64,7 +71,7 @@ function switchEditMode() {
     var req = createRequest();
     var contentElement = document.getElementById("content");
     oldContent = contentElement.value;
-    document.getElementById("viewcontent").innerHTML = oldContent;
+    document.getElementById("viewcontent").innerHTML = formatContent(oldContent);
     req.onreadystatechange = createFreeLockHandler(req);
     req.open("POST", mainURI, true);
     req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
@@ -183,10 +190,10 @@ function createLoadHandler(req/*, ts*/) {
           //var text = extractContent(req.responseXML);
           var text = req.responseText;
           // KHTML BUG:
-          text = text.slice(text.indexOf("\n") + 1);
+          pageContent = text.slice(text.indexOf("\n") + 1);
           var contentElement = document.getElementById("content");
-          contentElement.value = text;
-          document.getElementById("viewcontent").innerHTML = text;
+          contentElement.value = pageContent;
+          document.getElementById("viewcontent").innerHTML = formatContent(pageContent);
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");

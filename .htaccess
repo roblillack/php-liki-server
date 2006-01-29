@@ -2,3 +2,29 @@
 ForceType 'text/plain; charset=UTF-8'
 </Files>
 
+<IfModule mod_rewrite.c>
+RewriteEngine on
+
+# ja, das macht sinn...
+RewriteBase /
+
+# zugriffe auf dateien/verzeichnisse, die existieren, sofort durchlassen
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.*$ - [L]
+
+RewriteCond %{ENV:changed} !^yes$
+RewriteRule ^(.*)/$ index.php?page=$1 [QSA,E=changed:yes]
+
+RewriteCond %{ENV:changed} !^yes$
+RewriteRule ^(.*)$ index.php?page=$1 [QSA,E=changed:yes]
+
+RewriteCond %{ENV:changed} ^yes$
+RewriteCond %{REQUEST_URI} ^/modules/liki/.*$
+RewriteRule ^(.*)$ modules/liki/$1 [L]
+
+RewriteCond %{ENV:changed} ^yes$
+RewriteCond %{REQUEST_URI} ^/liki/.*$
+RewriteRule ^(.*)$ liki/$1 [L]
+</IfModule>
+

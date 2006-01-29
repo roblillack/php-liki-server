@@ -2,13 +2,17 @@
 require('_classes/bs_utils.php');
 require('bs_likibackend.php');
 
+$page = bs_request('page', false);
+if ($page == "") {
+  header('Location: '.bs_url().'frontpage');
+  exit;
+};
+
 $key = bs_request('key', false);
 if (strlen($key) != 32) {
   //$key = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time());
   $key = false;
 }
-
-$page = 'testpage';
 
 $b = new bsLikiBackend();
 
@@ -108,8 +112,8 @@ echo XHTML_11_HEADER;
   <link rel="icon" href="favicon.ico" type="image/ico" />
   <link rel="Shortcut Icon" type="image/x-icon" href="<?=(bs_baseurl());?>/favicon.ico" />
  </head>
- <body id="mainbody" onLoad="initLiki('<?=(bs_url());?>', 5000)">
-  <h1 id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></h1>
+ <body id="mainbody" onLoad="initLiki('<?=(bs_url(false));?>', 5000)">
+  <a href="<?=(bs_baseurl().'/frontpage');?>" id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></a>
   <div id="toolbar">
    <a id="editchecker" href="#" class="readmode" onClick="switchEditMode()">edit</a>
    <!-- | <a href="http://ruckelfotze.de/">ruckelfotze</a> -->
