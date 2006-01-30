@@ -5,6 +5,12 @@ body {
   margin: 0;
 }
 
+div.lastchanges {
+  background-color: white;
+  border: 1px solid #ddf;
+  padding: 3px;
+}
+
 a#likititle {
   position: fixed;
   top: 2px;

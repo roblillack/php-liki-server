@@ -19,10 +19,12 @@ $b = new bsLikiBackend();
 if (bs_request('action') == 'htmlload') {
   $p = $b->getPage($page);
   header('X-LIKI-Timestamp: '.$p['timestamp']);
+  header('X-LIKI-LastChanges: '.$b->getLastChanges(10));
   header('Content-type: text/html; charset=UTF-8');
   // this is just a fix for a safari bug.
   // the client MUST kill this line!
   echo("<"."?xml version=\"1.0\" encoding=\"utf-8\"?".">\n");
+  echo "$h\n";
   echo($p['content']);
   exit;
 } elseif (bs_request('action') == 'plainload') {

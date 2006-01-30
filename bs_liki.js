@@ -14,6 +14,7 @@ var pageContent;
 var oldContent;
 var transmitting;
 var lastTimestamp;
+var lastChanges = "";
 
 /*function shakeElement(id, width) {
   var e = document.getElementById(id);
@@ -27,8 +28,25 @@ var lastTimestamp;
 }*/
 
 function formatContent(input) {
+  var preamble = ""
+  if (lastChanges != "") {
+    preamble += "<div class=\"lastchanges\">";
+    var changes = lastChanges.split(" ");
+    preamble += "last changes: ";
+    for (var i = 0; i < changes.length; i++) {
+      if (i>0) preamble += " ";
+      preamble += "[["+changes[i]+"]]";
+    }
+    preamble += "</div>\n\n";
+  }
+  input = preamble+input;
   baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
-  return input.replace(/\[\[([a-zA-Z0-9\-äöüßÄÖÜ]+)\]\]/g, '<a href="'+baseURI+'/$1">$1</a>');
+  input = input.replace(/\n\s*\n/g, "\n<br/><br/>\n");
+  input = input.replace(/_([^\s]+)_/g, '<em>$1</em>');
+  input = input.replace(/\*([^\s]+)\*/g, '<strong>$1</strong>');
+  input = input.replace(/(\s)-([^\s]+)-([\s\.,])/g, '$1<s>$2</s>$3');
+  input = input.replace(/\[\[([a-zA-Z0-9\-äöüßÄÖÜ]+)\]\]/g, '<a href="'+baseURI+'/$1">$1</a>');
+  return input;
 }
 
 function setEditMode(onoff) {
@@ -190,11 +208,12 @@ function createLoadHandler(req/*, ts*/) {
           //var text = extractContent(req.responseXML);
           var text = req.responseText;
           // KHTML BUG:
-          pageContent = text.slice(text.indexOf("\n") + 1);
+          pageContent = text.slice(text.indexOf("\n") + 2);
           var contentElement = document.getElementById("content");
           contentElement.value = pageContent;
-          document.getElementById("viewcontent").innerHTML = formatContent(pageContent);
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
+          lastChanges = req.getResponseHeader('X-LIKI-LastChanges');
+          document.getElementById("viewcontent").innerHTML = formatContent(pageContent);
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
         }
@@ -226,7 +245,7 @@ function saveChanges() {
   var req = createRequest();
   var contentElement = document.getElementById("content");
   oldContent = contentElement.value;
-  document.getElementById("viewcontent").innerHTML = oldContent;
+  document.getElementById("viewcontent").innerHTML = formatContent(oldContent);
   req.onreadystatechange = createSaveHandler(req);
   req.open("POST", mainURI, true);
   req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");

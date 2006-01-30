@@ -127,6 +127,17 @@ class bsLikiBackend {
       return true;
     }
   }
+
+  function getLastChanges($count = 1) {
+    $changes = "";
+    $res = mysql_query("SELECT name FROM ".$this->table." ORDER BY timestamp DESC LIMIT $count");
+    if (!$res) return false;
+    while ($r = mysql_fetch_assoc($res)) {
+      $changes .= " ".$r['name'];
+    }
+    mysql_free_result($res);
+    return $changes;
+  }
   
   function getPage($page) {
     $this->autoFree($page);
