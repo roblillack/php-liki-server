@@ -27,6 +27,7 @@ var lastTimestamp;
 }*/
 
 function setRecentChanges(what) {
+  if (!what) return;
   var c = "recent Changes: ";
   var changes = what.split(" ");
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
@@ -186,10 +187,7 @@ function createTimestampHandler(req) {
     if (req.readyState == 4 &&
         req.status == 200) {
       // update the recently changes pages regardless of the timestamp:
-      var changes = req.getResponseHeader('X-LIKI-RecentChanges');
-      if (changes != "") {
-        setRecentChanges(changes);
-      }
+      setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges'));
       // so, time to update?
       if (req.responseText > lastTimestamp) {
         setStatus("Loading changes...");
@@ -212,6 +210,7 @@ function createLoadHandler(req/*, ts*/) {
     if (req.readyState == 4) {
       if (editMode == false) {
         if (req.status == 200) {
+          setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges'));
           //var text = extractContent(req.responseXML);
           var text = req.responseText;
           // KHTML BUG:
@@ -219,10 +218,6 @@ function createLoadHandler(req/*, ts*/) {
           var contentElement = document.getElementById("content");
           contentElement.value = pageContent;
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
-          var changes = req.getResponseHeader('X-LIKI-RecentChanges');
-          if (changes != "") {
-            setRecentChanges(changes);
-          }
           document.getElementById("viewcontent").innerHTML = formatContent(pageContent);
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
