@@ -104,6 +104,7 @@ if (bs_request('action') == 'htmlload') {
 }
 
 header("Content-type: text/html; charset=UTF-8");
+bs_header_nocache();
 echo XML_HEADER;
 echo XHTML_11_HEADER;
 ?>

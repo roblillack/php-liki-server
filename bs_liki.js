@@ -187,7 +187,7 @@ function createTimestampHandler(req) {
     if (req.readyState == 4 &&
         req.status == 200) {
       // update the recently changes pages regardless of the timestamp:
-      setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges'));
+      try { setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges')); } catch(e) {}
       // so, time to update?
       if (req.responseText > lastTimestamp) {
         setStatus("Loading changes...");
@@ -210,7 +210,7 @@ function createLoadHandler(req/*, ts*/) {
     if (req.readyState == 4) {
       if (editMode == false) {
         if (req.status == 200) {
-          setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges'));
+          try { setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges')); } catch(e) {}
           //var text = extractContent(req.responseXML);
           var text = req.responseText;
           // KHTML BUG:

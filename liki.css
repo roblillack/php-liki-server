@@ -11,9 +11,11 @@ body {
   background-color: #999;
   color: #ddd;
   border: 0;
-  padding: 3px;
+  padding: 2px;
   font-family: sans-serif;
   font-size: 10px;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 
 #recentchanges a {
@@ -36,9 +38,9 @@ a#likititle {
   font-size: 30px;
   font-style: italic;
   margin: 0;
-  margin-top: 25px;
+  margin-top: 50px;
   margin-left: 5px;
-  margin-bottom: -5px;
+  margin-bottom: -7px;
   font-weight: normal;
   text-decoration: none;
 }
