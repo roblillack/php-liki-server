@@ -37,12 +37,15 @@ a#likititle {
   font-family: Georgia,serif;
   font-size: 30px;
   font-style: italic;
+  padding-top: 70px;
+  padding-left: 10px;
   margin: 0;
-  margin-top: 50px;
-  margin-left: 5px;
   margin-bottom: -7px;
   font-weight: normal;
   text-decoration: none;
+  background-image: url(back.jpg);
+  background-position: bottom left;
+  background-repeat: no-repeat;
 }
 a#likititle em {
   font-style: italic;
@@ -155,7 +158,8 @@ a#likititle:hover, a#likititle:hover em {
   right: 0px;
   bottom: 0px;
   z-index: 1;
-  margin: 10px;
+  margin: 0;
+  border: 10px solid #ccc;
 }
 
 table {
