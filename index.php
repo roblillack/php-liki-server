@@ -34,6 +34,7 @@ if (bs_request('action') == 'htmlload') {
   exit;
 } elseif (bs_request('action') == 'timestamp') {
   $p = $b->getPage($page);
+  header('X-LIKI-RecentChanges: '.$b->getLastChanges(10));
   header('Content-type: text/plain; charset=UTF-8');
   echo($p['timestamp']);
   exit;
@@ -123,6 +124,7 @@ echo XHTML_11_HEADER;
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
+  <div id='recentchanges'></div>
   <div id='viewcontent'></div>
   <div id='status'></div>
   <!--<div id='changer'></div>-->

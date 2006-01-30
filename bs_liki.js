@@ -14,7 +14,6 @@ var pageContent;
 var oldContent;
 var transmitting;
 var lastTimestamp;
-var lastChanges = "";
 
 /*function shakeElement(id, width) {
   var e = document.getElementById(id);
@@ -27,18 +26,19 @@ var lastChanges = "";
   }
 }*/
 
+function setRecentChanges(what) {
+  var c = "recent Changes: ";
+  var changes = what.split(" ");
+  var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
+  for (var i = 0; i < changes.length; i++) {
+    if (i > 0 && i < changes.length) c += " |"
+    c += " <a href=\""+baseURI+"/"+changes[i]+"\">"+changes[i]+"</a>";
+  }
+  document.getElementById("recentchanges").innerHTML=c;
+}
+
 function formatContent(input) {
   var preamble = ""
-  if (lastChanges != "") {
-    preamble += "<div class=\"lastchanges\">";
-    var changes = lastChanges.split(" ");
-    preamble += "last changes: ";
-    for (var i = 0; i < changes.length; i++) {
-      if (i>0) preamble += " ";
-      preamble += "[["+changes[i]+"]]";
-    }
-    preamble += "</div>\n\n";
-  }
   input = preamble+input;
   baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   input = input.replace(/\n\s*\n/g, "\n<br/><br/>\n");
@@ -184,19 +184,26 @@ function extractContent(xmldoc) {
 function createTimestampHandler(req) {
   return function() {
     if (req.readyState == 4 &&
-        req.status == 200 &&
-        req.responseText > lastTimestamp) {
-      setStatus("Loading changes...");
-      var r = createRequest();
-      r.onreadystatechange = createLoadHandler(r/*, req.responseText*/);
-      //r.open("GET", mainURI+"?action=plainload", true);
-      r.open("GET", mainURI+"?action=htmlload", true);
-      //r.open("GET", mainURI+"?action=load", true);
-      r.send("");
-    } else {
-      setStatus("No changes.");
-      transmitting = false;
+        req.status == 200) {
+      // update the recently changes pages regardless of the timestamp:
+      var changes = req.getResponseHeader('X-LIKI-RecentChanges');
+      if (changes != "") {
+        setRecentChanges(changes);
+      }
+      // so, time to update?
+      if (req.responseText > lastTimestamp) {
+        setStatus("Loading changes...");
+        var r = createRequest();
+        r.onreadystatechange = createLoadHandler(r/*, req.responseText*/);
+        //r.open("GET", mainURI+"?action=plainload", true);
+        r.open("GET", mainURI+"?action=htmlload", true);
+        //r.open("GET", mainURI+"?action=load", true);
+        r.send("");
+        return;
+      }
     }
+    setStatus("No changes.");
+    transmitting = false;
   }
 }
 
@@ -212,7 +219,10 @@ function createLoadHandler(req/*, ts*/) {
           var contentElement = document.getElementById("content");
           contentElement.value = pageContent;
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
-          lastChanges = req.getResponseHeader('X-LIKI-LastChanges');
+          var changes = req.getResponseHeader('X-LIKI-RecentChanges');
+          if (changes != "") {
+            setRecentChanges(changes);
+          }
           document.getElementById("viewcontent").innerHTML = formatContent(pageContent);
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
