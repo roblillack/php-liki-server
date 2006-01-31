@@ -43,6 +43,8 @@ function formatContent(input) {
   var preamble = ""
   input = preamble+input;
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
+  // links
+  // input = input.replace(/(^|\s+)(http\:\/\/[^\s\"\']+)(\s+|$)/g, "$1<a href=\"$2\">$2</a>$3");
   // linie
   input = input.replace(/^---+\ *$/gm, '<bs:p><hr/></bs:p>');
   // sonderzeichen
@@ -63,13 +65,14 @@ function formatContent(input) {
   // center
   input = input.replace(/^\|\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><p style=\"text-align:center\">$1</p></bs:p>');
   // bilder
-  input = input.replace(/^(http\:\/\/[^\s]+\.(gif|jpg|jpeg|png))$/gm,
+  input = input.replace(/^\s*(http\:\/\/[^\s\"\']+\.(gif|jpg|jpeg|png))\s*$/gm,
                         "<bs:p><img class=\"centerpic\" src=\"$1\" alt=\"\" /></bs:p>");
-  // "normale" absaetze
   // damit sind KEINE breaks mehr nach paragraphen vorhanden:
   input = input.replace(/<\/bs\:p>\s*/g, "\n");
   input = input.replace(/\s*<bs\:p>/g, "\n");
-  input = input.replace(/\ \/\/\n/g, "<br />\n");
+  // forcierte breaks
+  input = input.replace(/\ \/\/\ *$/gm, "<br />");
+  // absaetze
   input = input.replace(/\n\s*\n/g, "<br /><br />\n");
   return input;
 }
@@ -209,7 +212,7 @@ function extractContent(xmldoc) {
 function createTimestampHandler(req) {
   return function() {
     if (req.readyState == 4 &&
-        req.status == 200) {
+        req.status && req.status == 200) {
       // update the recently changes pages regardless of the timestamp:
       try { setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges')); } catch(e) {}
       // so, time to update?
