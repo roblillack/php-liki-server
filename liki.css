@@ -139,6 +139,8 @@ a#likititle:hover, a#likititle:hover em {
 }
 
 #content {
+  font-family: monospace;
+  font-size: 13px;
   background-color: white;
   display: block;
   position: absolute;

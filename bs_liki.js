@@ -41,12 +41,24 @@ function setRecentChanges(what) {
 function formatContent(input) {
   var preamble = ""
   input = preamble+input;
-  baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
-  input = input.replace(/\n\s*\n/g, "\n<br/><br/>\n");
-  input = input.replace(/_([^\s]+)_/g, '<em>$1</em>');
-  input = input.replace(/\*([^\s]+)\*/g, '<strong>$1</strong>');
-  input = input.replace(/(\s)-([^\s]+)-([\s\.,])/g, '$1<s>$2</s>$3');
+  var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
+  // linie
+  input = input.replace(/^-{1,}\s*\n/gm, "<hr/>\n");
+  // sonderzeichen
+  input = input.replace(/([^-]|\n)--([^-]|\n)/g, '$1&ndash;$2');
+  input = input.replace(/([^-]|\n)---([^-]|\n)/g, '$1&mdash;$2');
+  // _hervorgehoben_, *fett*, -durchgestrichen-
+  input = input.replace(/([\s\W])_([\S][\S\ ]*?[\S])_([\s\W])/g, '$1<em>$2</em>$3');
+  input = input.replace(/([\s\W])\*([\S][\S\ ]*?[\S])\*([\s\W])/g, '$1<strong>$2</strong>$3');
+  input = input.replace(/([\s\W])-([\S][\S\ ]*?[\S])-([\s\W])/g, '$1<s>$2</s>$3');
+  // liki-seiten
   input = input.replace(/\[\[([a-zA-Z0-9\-äöüßÄÖÜ]+)\]\]/g, '<a href="'+baseURI+'/$1">$1</a>');
+  // listen
+  input = input.replace(/^-\ +([^\n]+(\n\ +[^\s\n]|[^\n])+)[\s\n]*/gm, "<ul><li>$1</li></ul>\n");
+  // header
+  input = input.replace(/^#\ +([^\n]+)[\s]*/gm, '<h1>$1</h1>\n');
+  // alle verbleibenden leerzeilen
+  input = input.replace(/\n\s*\n/g, "\n<br/><br/>\n");
   return input;
 }
 
