@@ -47,10 +47,10 @@ function formatContent(input) {
   // links
   // input = input.replace(/(^|\s+)(http\:\/\/[^\s\"\']+)(\s+|$)/g, "$1<a href=\"$2\">$2</a>$3");
   // linie
-  input = input.replace(/^---+\ *$/gm, '<bs:p><hr/></bs:p>');
+  input = input.replace(/[\r\n]\ *\-{3,}\ *[\r\n]/g, '<bs:p><hr/></bs:p>');
   // sonderzeichen
-  input = input.replace(/([^-]|\n)--([^-]|\n)/g, '$1&ndash;$2');
-  input = input.replace(/([^-]|\n)---([^-]|\n)/g, '$1&mdash;$2');
+  input = input.replace(/([^-]|[\r\n])--([^-]|[\r\n])/g, '$1&ndash;$2');
+  input = input.replace(/([^-]|[\r\n])---([^-]|[\r\n])/g, '$1&mdash;$2');
   // _hervorgehoben_, *fett*, -durchgestrichen-
   input = input.replace(/([\s\W])_([\S][\S\ ]*?[\S])_([\s\W])/g, '$1<em>$2</em>$3');
   input = input.replace(/([\s\W])\*([\S][\S\ ]*?[\S])\*([\s\W])/g, '$1<strong>$2</strong>$3');
@@ -72,7 +72,7 @@ function formatContent(input) {
   input = input.replace(/<\/bs\:p>\s*/g, "\n");
   input = input.replace(/\s*<bs\:p>/g, "\n");
   // forcierte breaks
-  input = input.replace(/\ \/\/\ *$/gm, "<br />");
+  input = input.replace(/\ \/\/\ *[\r\n]/g, "<br />");
   // absaetze
   input = input.replace(/\n\s*\n/g, "<br /><br />\n");
   return input;
