@@ -148,7 +148,7 @@ class bsLikiBackend {
       $changes .= str_pad($seconds, 2, '0', STR_PAD_LEFT).'s';
     }
     mysql_free_result($res);
-    return $changes;
+    return substr($changes,1);
   }
 
   function getPageList() {

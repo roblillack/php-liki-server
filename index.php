@@ -24,7 +24,7 @@ if (in_array(strtolower(bs_request('page', false)),$specialpages)) {
 $b = new bsLikiBackend();
 
 if (bs_request('action') == 'htmlload') {
-  header('X-LIKI-LastChanges: '.$b->getLastChanges(6));
+  header('X-LIKI-LastChanges: '.urlencode($b->getLastChanges(6)));
   if (strtolower($page) == 'index') {
     $index = "# Liki Index\n";
     $list = $b->getPageList();
@@ -48,7 +48,7 @@ if (bs_request('action') == 'htmlload') {
   echo($p['content']);
   exit;
 } elseif (bs_request('action') == 'timestamp') {
-  header('X-LIKI-RecentChanges: '.$b->getLastChanges(6));
+  header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
   header('Content-type: text/plain; charset=UTF-8');
   if ($havespecialpage) {
     echo "1";

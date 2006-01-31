@@ -28,6 +28,7 @@ var lastTimestamp;
 
 function setRecentChanges(what) {
   if (!what) return;
+  what = decodeURIComponent(what);
   var c = "";
   var changes = what.split(" ");
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
