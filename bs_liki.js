@@ -43,7 +43,7 @@ function formatContent(input) {
   input = preamble+input;
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   // linie
-  input = input.replace(/^-{1,}\s*\n/gm, "<hr/>\n");
+  input = input.replace(/^---+\ *$/gm, '<bs:p><hr/></bs:p>');
   // sonderzeichen
   input = input.replace(/([^-]|\n)--([^-]|\n)/g, '$1&ndash;$2');
   input = input.replace(/([^-]|\n)---([^-]|\n)/g, '$1&mdash;$2');
@@ -54,11 +54,19 @@ function formatContent(input) {
   // liki-seiten
   input = input.replace(/\[\[([a-zA-Z0-9\-äöüßÄÖÜ]+)\]\]/g, '<a href="'+baseURI+'/$1">$1</a>');
   // listen
-  input = input.replace(/^-\ +([^\n]+(\n\ +[^\s\n]|[^\n])+)[\s\n]*/gm, "<ul><li>$1</li></ul>\n");
+  input = input.replace(/^\-\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, "<bs:p><ul><li>$1</li></ul></bs:p>");
   // header
-  input = input.replace(/^#\ +([^\n]+)[\s]*/gm, '<h1>$1</h1>\n');
-  // alle verbleibenden leerzeilen
-  input = input.replace(/\n\s*\n/g, "\n<br/><br/>\n");
+  input = input.replace(/^\#\ +([^\n]+)$/gm, '<bs:p><h1>$1</h1></bs:p>');
+  // blockquotes
+  input = input.replace(/^\"\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><blockquote>$1</blockquote></bs:p>');
+  // center
+  input = input.replace(/^\|\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><p style=\"text-align:center\">$1</p></bs:p>');
+  // "normale" absaetze
+  // damit sind KEINE breaks mehr nach paragraphen vorhanden:
+  input = input.replace(/<\/bs\:p>\s*/g, "\n");
+  input = input.replace(/\s*<bs\:p>/g, "\n");
+  input = input.replace(/\ \/\/\n/g, "<br />\n");
+  input = input.replace(/\n\s*\n/g, "<br /><br />\n");
   return input;
 }
 
