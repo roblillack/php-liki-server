@@ -130,13 +130,38 @@ class bsLikiBackend {
 
   function getLastChanges($count = 1) {
     $changes = "";
-    $res = mysql_query("SELECT name FROM ".$this->table." ORDER BY timestamp DESC LIMIT $count");
+    $timestamp = time();
+    $res = mysql_query("SELECT name,timestamp FROM ".$this->table." ORDER BY timestamp DESC LIMIT $count");
     if (!$res) return false;
     while ($r = mysql_fetch_assoc($res)) {
-      $changes .= " ".$r['name'];
+      $seconds = $timestamp - $r['timestamp'];
+      $minutes = floor($seconds / 60); $seconds %= 60;
+      $hours = floor($minutes / 60); $minutes %= 60;
+      $days = floor($hours / 24); $hours %= 24;
+      $changes .= " ".$r['name']. "/";
+      if ($days > 0)
+        $changes .= "${days}d+";
+      if ($days > 0 || $hours > 0)
+        $changes .= str_pad($hours, 2, '0', STR_PAD_LEFT).'h';
+      if ($days > 0 || $hours > 0 || $minutes > 0)
+        $changes .= str_pad($minutes, 2, '0', STR_PAD_LEFT).'m';
+      $changes .= str_pad($seconds, 2, '0', STR_PAD_LEFT).'s';
     }
     mysql_free_result($res);
     return $changes;
+  }
+
+  function getPageList() {
+    $res = mysql_query("SELECT name FROM ".$this->table." ORDER BY name ASC");
+    if (!$res) {
+      trigger_error("could not get page list");
+      return false;
+    }
+    $pages = array();
+    while ($r = mysql_fetch_array($res))
+      $pages[] = $r[0];
+    mysql_free_result($res);
+    return $pages;
   }
   
   function getPage($page) {

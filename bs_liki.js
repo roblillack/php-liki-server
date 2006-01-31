@@ -28,12 +28,13 @@ var lastTimestamp;
 
 function setRecentChanges(what) {
   if (!what) return;
-  var c = "recent Changes: ";
+  var c = "";
   var changes = what.split(" ");
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   for (var i = 0; i < changes.length; i++) {
     if (i > 0 && i < changes.length) c += " |"
-    c += " <a href=\""+baseURI+"/"+changes[i]+"\">"+changes[i]+"</a>";
+    var data = changes[i].split("/");
+    c += " <a href=\""+baseURI+"/"+data[0]+"\">"+data[0]+"</a> <span class=\"time\">"+data[1]+"</span>";
   }
   document.getElementById("recentchanges").innerHTML=c;
 }
@@ -61,6 +62,9 @@ function formatContent(input) {
   input = input.replace(/^\"\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><blockquote>$1</blockquote></bs:p>');
   // center
   input = input.replace(/^\|\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><p style=\"text-align:center\">$1</p></bs:p>');
+  // bilder
+  input = input.replace(/^(http\:\/\/[^\s]+\.(gif|jpg|jpeg|png))$/gm,
+                        "<bs:p><img class=\"centerpic\" src=\"$1\" alt=\"\" /></bs:p>");
   // "normale" absaetze
   // damit sind KEINE breaks mehr nach paragraphen vorhanden:
   input = input.replace(/<\/bs\:p>\s*/g, "\n");
@@ -234,7 +238,7 @@ function createLoadHandler(req/*, ts*/) {
           //var text = extractContent(req.responseXML);
           var text = req.responseText;
           // KHTML BUG:
-          pageContent = text.slice(text.indexOf("\n") + 2);
+          pageContent = text.slice(text.indexOf("\n") + 1);
           var contentElement = document.getElementById("content");
           contentElement.value = pageContent;
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');

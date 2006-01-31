@@ -14,17 +14,32 @@ if (strlen($key) != 32) {
   $key = false;
 }
 
+$specialpages = array('index');
+if (in_array(strtolower(bs_request('page', false)),$specialpages)) {
+  $havespecialpage = true;
+} else {
+  $havespecialpage = false;
+}
+
 $b = new bsLikiBackend();
 
 if (bs_request('action') == 'htmlload') {
-  $p = $b->getPage($page);
+  header('X-LIKI-LastChanges: '.$b->getLastChanges(6));
+  if (strtolower($page) == 'index') {
+    $index = "# Liki Index\n";
+    $list = $b->getPageList();
+    foreach ($list as $i)
+      $index .= "- [[$i]]\n";
+    $p = array('content' => $index,
+               'timestamp' => '1');
+  } else {
+    $p = $b->getPage($page);
+  }
   header('X-LIKI-Timestamp: '.$p['timestamp']);
-  header('X-LIKI-LastChanges: '.$b->getLastChanges(10));
   header('Content-type: text/html; charset=UTF-8');
   // this is just a fix for a safari bug.
   // the client MUST kill this line!
   echo("<"."?xml version=\"1.0\" encoding=\"utf-8\"?".">\n");
-  echo "$h\n";
   echo($p['content']);
   exit;
 } elseif (bs_request('action') == 'plainload') {
@@ -33,13 +48,17 @@ if (bs_request('action') == 'htmlload') {
   echo($p['content']);
   exit;
 } elseif (bs_request('action') == 'timestamp') {
-  $p = $b->getPage($page);
-  header('X-LIKI-RecentChanges: '.$b->getLastChanges(10));
+  header('X-LIKI-RecentChanges: '.$b->getLastChanges(6));
   header('Content-type: text/plain; charset=UTF-8');
-  echo($p['timestamp']);
+  if ($havespecialpage) {
+    echo "1";
+  } else {
+    $p = $b->getPage($page);
+    echo($p['timestamp']);
+  }
   exit;
 } elseif (bs_request('action') == 'freelock') {
-  if ($key && $b->freePage($page, $key)) {
+  if (!$havespecialpage && $key && $b->freePage($page, $key)) {
     header("HTTP/1.1 204 lock released");
   } else {
     header("HTTP/1.1 403 could not release lock");
@@ -48,7 +67,7 @@ if (bs_request('action') == 'htmlload') {
   exit;
 } elseif (bs_request('action') == 'requestlock') {
   $newkey = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time());
-  if ($b->lockPage($page, $newkey)/*&& $_SERVER['REMOTE_ADDR'] == '195.158.172.112'*/) {
+  if (!$havespecialpage && $b->lockPage($page, $newkey)/*&& $_SERVER['REMOTE_ADDR'] == '195.158.172.112'*/) {
     //header("HTTP/1.1 204 lock acquired");
     header('Content-type: text/plain; charset=UTF-8');
     echo($newkey);
@@ -79,7 +98,7 @@ if (bs_request('action') == 'htmlload') {
   $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'edit') {
-  if ($key && $b->updatePage($page, $key, str_replace("\r", "", bs_request('content', false)))) {
+  if (!$havespecialpage && $key && $b->updatePage($page, $key, str_replace("\r", "", bs_request('content', false)))) {
     header('Content-type: text/plain; charset=UTF-8');
     echo("ok\n");
     // impossible because konqueror BROWSER BUG:
@@ -90,7 +109,7 @@ if (bs_request('action') == 'htmlload') {
   $b->closeConnection();
   exit;
 } elseif (bs_request('action') == 'saveandfree') {
-  if ($key && $b->updatePage($page, $key, bs_request('content', false))
+  if (!$havespecialpage && $key && $b->updatePage($page, $key, bs_request('content', false))
       && $b->freePage($page, $key)) {
     header('Content-type: text/plain; charset=UTF-8');
     echo("ok\n");
@@ -125,7 +144,11 @@ echo XHTML_11_HEADER;
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
-  <div id='recentchanges'></div>
+  <div id="navibar">
+   <a href="<?=(bs_baseurl().'/frontpage');?>">frontpage</a>,
+   <a href="<?=(bs_baseurl().'/INDEX');?>">index</a>. &mdash;
+   recently changed: <span id="recentchanges"></span>
+  </div>
   <div id='viewcontent'></div>
   <div id='status'></div>
   <!--<div id='changer'></div>-->
