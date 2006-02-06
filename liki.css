@@ -141,6 +141,7 @@ a#likititle:hover, a#likititle:hover em {
   font-size: 9px;
   line-height: 9px;
   height: 11px;
+  width: 60px;
   background-color: #ccc;
   color: black;
 }
