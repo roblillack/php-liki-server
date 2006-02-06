@@ -133,15 +133,15 @@ a#likititle:hover, a#likititle:hover em {
   border-bottom: 1px solid #999;
 }
 
-form#searchform, #searchfield {
+#searchform, #searchfield {
   display: inline;
   margin: 0;
+  border: 0;
   padding: 0;
   font-size: 9px;
   line-height: 9px;
   height: 11px;
-  border: 0;
-  background: #ccc;
+  background-color: #ccc;
   color: black;
 }
 
