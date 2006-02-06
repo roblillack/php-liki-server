@@ -99,16 +99,19 @@ function setEditMode(onoff) {
     eEditForm.style.visibility = 'hidden';
     eViewContent.style.display = 'block';
     eEditButton.setAttribute('class', 'readmode');
-    eEditButton.innerHTML = 'edit';
+    eEditButton.setAttribute('accessKey', 'e');
+    eEditButton.innerHTML = '<u>e</u>dit';
     body.style.overflow = 'auto';
     setStatus('Ready.');
   } else {
     eEditForm.style.visibility = 'visible';
     eViewContent.style.display = 'none';
     eEditButton.setAttribute('class', 'editmode');
-    eEditButton.innerHTML = 'save &amp; quit';
+    eEditButton.setAttribute('accessKey', 'q');
+    eEditButton.innerHTML = 'save &amp; <u>q</u>uit';
     body.style.overflow = 'hidden';
     setStatus('Editing...');
+    eEditContent.focus();
   }
   editMode = onoff;
 }

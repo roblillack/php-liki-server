@@ -160,16 +160,16 @@ echo XHTML_11_HEADER;
   <link rel="Shortcut Icon" type="image/x-icon" href="<?=(bs_baseurl());?>/favicon.ico" />
  </head>
  <body id="mainbody" onLoad="initLiki(<?=$params?>)">
-  <a href="<?=(bs_baseurl().'/frontpage');?>" id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></a>
+  <a accessKey="f" href="<?=(bs_baseurl().'/frontpage');?>" id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></a>
   <div id="toolbar">
-   <a id="editchecker" href="#" class="readmode" onClick="switchEditMode()">edit</a>
+   <a id="editchecker" href="javascript:switchEditMode()" class="readmode">...</a>
   </div>
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
   <div id="navibar">
-   <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form> |
-   <a href="<?=(bs_baseurl().'/INDEX');?>">index</a>. &mdash;
+   <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input accessKey="s" onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form> |
+   <a accessKey="i" href="<?=(bs_baseurl().'/INDEX');?>"><u>i</u>ndex</a>. &mdash;
    recently changed: <span id="recentchanges"></span>
   </div>
   <div id='viewcontent'></div>
