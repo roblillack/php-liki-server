@@ -8,16 +8,20 @@ body {
 
 #navibar {
   text-align: left;
+  position: relative;
   overflow: hidden;
   margin: 0;
   background-color: #999;
   color: #ddd;
   border: 0;
-  padding: 2px;
+  padding: 1px;
   font-family: sans-serif;
   font-size: 10px;
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
+  height: 14px;
+  padding-left: 5px;
+  padding-right: 64px;
 }
 
 #navibar a {
@@ -140,10 +144,21 @@ a#likititle:hover, a#likititle:hover em {
   padding: 0;
   font-size: 9px;
   line-height: 9px;
-  height: 11px;
+  /*height: 14px;*/
+  width: 60px;
+  color: black;
+}
+
+#searchfield {
+  position:absolute;
+  top: 2px;
+  right: 2px;
+  height: 12px;
   width: 60px;
   background-color: #ccc;
-  color: black;
+}
+#searchfield:hover, #searchfield:focus {
+  background-color: #ffc;
 }
 
 #content, #viewcontent {

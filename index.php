@@ -15,7 +15,7 @@ if (strlen($key) != 32) {
 }
 
 $specialpages = array('index','search');
-if (in_array(strtolower(bs_request('page', false)),$specialpages)) {
+if (in_array(strtolower(bs_request('page', false)), $specialpages)) {
   $havespecialpage = true;
 } else {
   $havespecialpage = false;
@@ -168,8 +168,8 @@ echo XHTML_11_HEADER;
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
   <div id="navibar">
-   <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input accessKey="s" onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form> |
-   <a accessKey="i" href="<?=(bs_baseurl().'/INDEX');?>"><u>i</u>ndex</a>. &mdash;
+   <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input accessKey="s" onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form>
+   <a accessKey="i" href="<?=(bs_baseurl().'/INDEX');?>"><u>i</u>ndex</a>,
    recently changed: <span id="recentchanges"></span>
   </div>
   <div id='viewcontent'></div>
