@@ -42,8 +42,8 @@ a#likititle {
   display: block;
   text-align: left;
   font-style: normal;
-  color: #c00;
-  z-index:50;
+  color: #ccc;
+  z-index: 50;
   font-family: Georgia,serif;
   font-size: 30px;
   font-style: italic;
@@ -53,20 +53,40 @@ a#likititle {
   margin-bottom: -7px;
   font-weight: normal;
   text-decoration: none;
-  background-image: url(back.jpg);
+  /*background-image: url(back.jpg);
   background-position: bottom left;
-  background-repeat: no-repeat;
+  background-repeat: no-repeat;*/
+  background-color: #900;
 }
 a#likititle em {
   font-style: italic;
-  color: #555;
+  color: white;
   text-decoration: none;
   /*text-decoration: underline;*/
 }
+a#likititle:after {
+  visibility: hidden;
+  content: ' frontpage';
+  border: 0;
+  margin: 0;
+  padding: 0;
+  color: white;
+
+}
 
 a#likititle:hover, a#likititle:hover em {
-  color: black;
+  color: #999;
   text-decoration: none;
+  background-image: none;
+  background-color: #800;
+}
+
+a#likititle:hover em {
+  color: #aaa;
+}
+
+a#likititle:hover:after {
+  visibility: visible;
 }
 
 #toolbar {
@@ -200,7 +220,7 @@ a#likititle:hover, a#likititle:hover em {
   left: 0px;
   right: 0px;
   bottom: 0px;
-  z-index: 1;
+  z-index: 100;
   margin: 0;
   padding: 0;
   border: 0;

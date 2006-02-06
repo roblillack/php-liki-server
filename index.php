@@ -160,7 +160,7 @@ echo XHTML_11_HEADER;
   <link rel="Shortcut Icon" type="image/x-icon" href="<?=(bs_baseurl());?>/favicon.ico" />
  </head>
  <body id="mainbody" onLoad="initLiki(<?=$params?>)">
-  <a accessKey="f" href="<?=(bs_baseurl().'/frontpage');?>" id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></a>
+  <a accessKey="f" href="<?=(bs_baseurl().'/frontpage');?>" id="likititle">the <em>#burningsoda</em> liki</a>
   <div id="toolbar">
    <a id="editchecker" href="javascript:switchEditMode()" class="readmode">...</a>
   </div>
