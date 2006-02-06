@@ -262,6 +262,7 @@ function createLoadHandler(req/*, ts*/) {
           eViewContent.innerHTML = formatContent(pageContent);
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
+          eEditButton.focus();
         }
       }
       transmitting = false;
