@@ -20,6 +20,7 @@ var lastTimestamp;
 var eEditButton;
 var eViewContent;
 var eEditContent;
+var eEditForm;
 var eStatusLine;
 var eRecentChanges;
 
@@ -95,14 +96,14 @@ function setEditMode(onoff) {
   var body = document.getElementById("mainbody");
 
   if (onoff == false) {
-    eEditContent.style.visibility = 'hidden';
+    eEditForm.style.visibility = 'hidden';
     eViewContent.style.display = 'block';
     eEditButton.setAttribute('class', 'readmode');
     eEditButton.innerHTML = 'edit';
     body.style.overflow = 'auto';
     setStatus('Ready.');
   } else {
-    eEditContent.style.visibility = 'visible';
+    eEditForm.style.visibility = 'visible';
     eViewContent.style.display = 'none';
     eEditButton.setAttribute('class', 'editmode');
     eEditButton.innerHTML = 'save &amp; quit';
@@ -282,6 +283,7 @@ function initLiki(u, t, readonly, query) {
   // init the elements
   eEditButton = document.getElementById('editchecker');
   eViewContent = document.getElementById('viewcontent');
+  eEditForm = document.getElementById('contenteditor');
   eEditContent = document.getElementById('content');
   eStatusLine = document.getElementById('status');
   eRecentChanges = document.getElementById('recentchanges');
