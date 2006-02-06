@@ -164,6 +164,19 @@ class bsLikiBackend {
     return $pages;
   }
   
+  function getPagesContaining($what) {
+    $res = mysql_query("SELECT name FROM ".$this->table." WHERE content like '%".addslashes($what)."%' ORDER BY name ASC");
+    if (!$res) {
+      trigger_error("could not get page list");
+      return false;
+    }
+    $pages = array();
+    while ($r = mysql_fetch_array($res))
+      $pages[] = $r[0];
+    mysql_free_result($res);
+    return $pages;
+  }
+   
   function getPage($page) {
     $this->autoFree($page);
     $page = addslashes($page);

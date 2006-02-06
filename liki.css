@@ -112,6 +112,10 @@ a#likititle:hover, a#likititle:hover em {
   color: white;
   background-color: red;
 }
+.disabled {
+  color: #555;
+  background-color: #ddd;
+}
   
 #status {
   position: fixed;
@@ -128,6 +132,19 @@ a#likititle:hover, a#likititle:hover em {
   font-family: sans-serif;
   border-bottom: 1px solid #999;
 }
+
+form#searchform, #searchfield {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  font-size: 9px;
+  line-height: 9px;
+  height: 11px;
+  border: 0;
+  background: #ccc;
+  color: black;
+}
+
 #content, #viewcontent {
   text-align: left;
   color: #333;

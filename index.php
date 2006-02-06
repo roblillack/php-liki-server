@@ -14,17 +14,18 @@ if (strlen($key) != 32) {
   $key = false;
 }
 
-$specialpages = array('index');
+$specialpages = array('index','search');
 if (in_array(strtolower(bs_request('page', false)),$specialpages)) {
   $havespecialpage = true;
 } else {
   $havespecialpage = false;
 }
 
+
 $b = new bsLikiBackend();
 
 if (bs_request('action') == 'htmlload') {
-  header('X-LIKI-LastChanges: '.urlencode($b->getLastChanges(6)));
+  header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
   if (strtolower($page) == 'index') {
     $index = "# Liki Index\n";
     $list = $b->getPageList();
@@ -32,6 +33,17 @@ if (bs_request('action') == 'htmlload') {
       $index .= "- [[$i]]\n";
     $p = array('content' => $index,
                'timestamp' => '1');
+  } elseif (strtolower($page) == 'search') {
+    if (bs_request('q') != '') {
+      $index = "# Search for \"".htmlentities(bs_request('q', false))."\"\n";
+      $list = $b->getPagesContaining(bs_request('q', false));
+      if ($list !== false) foreach ($list as $i) $index .= "- [[$i]]\n";
+      $p = array('content' => $index,
+                 'timestamp' => '1');
+    } else {
+      $p = array('content' => '# Search',
+                 'timestamp' => '1');
+    }
   } else {
     $p = $b->getPage($page);
   }
@@ -122,6 +134,18 @@ if (bs_request('action') == 'htmlload') {
   exit;
 }
 
+$baseURI = bs_url(true);
+$mainURI = "$baseURI/$page";
+$params_readonly = $havespecialpage ? 'true' : 'false';
+if (strtolower($page) == 'search') {
+  $params_query = "'".bs_request('q', true)."'";
+  $searchfield = $params_query;
+} else {
+  $params_query = 'false';
+  $searchfield = '"search..."';
+}
+$params = "'$mainURI', 5000, $params_readonly, $params_query";
+
 header("Content-type: text/html; charset=UTF-8");
 bs_header_nocache();
 echo XML_HEADER;
@@ -129,23 +153,22 @@ echo XHTML_11_HEADER;
 ?>
 <html>
  <head>
-  <title>liki &mdash; the LIve wiKI</title>
+  <title>liki &mdash; the LIve wiKI: <?=$page;?></title>
   <script type="text/javascript" src="bs_liki.js"></script>
   <link rel="stylesheet" type="text/css" href="liki.css" />
   <link rel="icon" href="favicon.ico" type="image/ico" />
   <link rel="Shortcut Icon" type="image/x-icon" href="<?=(bs_baseurl());?>/favicon.ico" />
  </head>
- <body id="mainbody" onLoad="initLiki('<?=(bs_url(false));?>', 5000)">
+ <body id="mainbody" onLoad="initLiki(<?=$params?>)">
   <a href="<?=(bs_baseurl().'/frontpage');?>" id="likititle"><em>liki</em> &mdash; the <em>li</em>ve wi<em>ki</em></a>
   <div id="toolbar">
    <a id="editchecker" href="#" class="readmode" onClick="switchEditMode()">edit</a>
-   <!-- | <a href="http://ruckelfotze.de/">ruckelfotze</a> -->
   </div>
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
   <div id="navibar">
-   <a href="<?=(bs_baseurl().'/frontpage');?>">frontpage</a>,
+   <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form> |
    <a href="<?=(bs_baseurl().'/INDEX');?>">index</a>. &mdash;
    recently changed: <span id="recentchanges"></span>
   </div>

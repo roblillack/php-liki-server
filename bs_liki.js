@@ -9,11 +9,24 @@ var timeout;
 var editMode;
 var interval;
 var lockKey;
+var pageIsReadOnly;
+var pageQuery;
 // pagecontent (unformatiert)
 var pageContent;
 var oldContent;
 var transmitting;
 var lastTimestamp;
+// DOM nodes:
+var eEditButton;
+var eViewContent;
+var eEditContent;
+var eStatusLine;
+var eRecentChanges;
+
+function dumpVars() {
+  alert("VARIABLES:\n" +
+        "mainURI: " + mainURI + "\n");
+}
 
 /*function shakeElement(id, width) {
   var e = document.getElementById(id);
@@ -37,7 +50,7 @@ function setRecentChanges(what) {
     var data = changes[i].split("/");
     c += " <a href=\""+baseURI+"/"+data[0]+"\">"+data[0]+"</a> <span class=\"time\">"+data[1]+"</span>";
   }
-  document.getElementById("recentchanges").innerHTML=c;
+  eRecentChanges.innerHTML=c;
 }
 
 function formatContent(input) {
@@ -79,23 +92,20 @@ function formatContent(input) {
 }
 
 function setEditMode(onoff) {
-  var contentElement = document.getElementById("contenteditor");
-  var view = document.getElementById('viewcontent');
-  var checker = document.getElementById("editchecker");
   var body = document.getElementById("mainbody");
 
   if (onoff == false) {
-    contentElement.style.visibility = 'hidden';
-    view.style.display = 'block';
-    checker.setAttribute('class', 'readmode');
-    checker.innerHTML = 'edit';
+    eEditContent.style.visibility = 'hidden';
+    eViewContent.style.display = 'block';
+    eEditButton.setAttribute('class', 'readmode');
+    eEditButton.innerHTML = 'edit';
     body.style.overflow = 'auto';
     setStatus('Ready.');
   } else {
-    contentElement.style.visibility = 'visible';
-    view.style.display = 'none';
-    checker.setAttribute('class', 'editmode');
-    checker.innerHTML = 'save &amp; quit';
+    eEditContent.style.visibility = 'visible';
+    eViewContent.style.display = 'none';
+    eEditButton.setAttribute('class', 'editmode');
+    eEditButton.innerHTML = 'save &amp; quit';
     body.style.overflow = 'hidden';
     setStatus('Editing...');
   }
@@ -103,7 +113,7 @@ function setEditMode(onoff) {
 }
 
 function switchEditMode() {
-  document.getElementById("editchecker").setAttribute('class', 'transmitting');
+  eEditButton.setAttribute('class', 'transmitting');
 
   if (editMode == false) {
     // create lock request
@@ -116,13 +126,12 @@ function switchEditMode() {
   } else {
     setStatus("saving and freeing lock....");
     var req = createRequest();
-    var contentElement = document.getElementById("content");
-    oldContent = contentElement.value;
-    document.getElementById("viewcontent").innerHTML = formatContent(oldContent);
+    oldContent = eEditContent.value;
+    eViewContent.innerHTML = formatContent(oldContent);
     req.onreadystatechange = createFreeLockHandler(req);
     req.open("POST", mainURI, true);
     req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-    req.send("action=saveandfree&key="+lockKey+"&content="+encodeURIComponent(contentElement.value));
+    req.send("action=saveandfree&key="+lockKey+"&content="+encodeURIComponent(eEditContent.value));
   }
 }
 
@@ -147,13 +156,13 @@ function createRequest() {
 function createRequestLockHandler(req) {
   return function() {
     if (req.readyState == 4) {
-      if (req.status == 200) {
+      if (req.status && req.status == 200) {
         lockKey = req.responseText;
         setEditMode(true);
       } else {
         lockKey = false;
         setEditMode(false);
-        setStatus('LIKI is locked by another user.');
+        setStatus('Page is locked.');
         //shakeElement('viewcontent');
       }
     }
@@ -163,7 +172,7 @@ function createRequestLockHandler(req) {
 function createFreeLockHandler(req) {
   return function() {
     if (req.readyState == 4) {
-      if (req.status == 200) {
+      if (req.status && req.status == 200) {
         lockKey = false;
         setEditMode(false);
         setStatus('Saved & Happy.');
@@ -178,7 +187,7 @@ function createFreeLockHandler(req) {
 function createSaveHandler(req) {
   return function() {
     if (req.readyState == 4) {
-      if (req.status == 200) {
+      if (req.status && req.status == 200) {
         setStatus('Saved');
       } else {
         setEditMode(false);
@@ -213,7 +222,7 @@ function extractContent(xmldoc) {
 function createTimestampHandler(req) {
   return function() {
     if (req.readyState == 4 &&
-        req.status && req.status == 200) {
+        req.status == 200) {
       // update the recently changes pages regardless of the timestamp:
       try { setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges')); } catch(e) {}
       // so, time to update?
@@ -238,15 +247,15 @@ function createLoadHandler(req/*, ts*/) {
     if (req.readyState == 4) {
       if (editMode == false) {
         if (req.status == 200) {
+          // update the recently changes pages:
           try { setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges')); } catch(e) {}
           //var text = extractContent(req.responseXML);
           var text = req.responseText;
           // KHTML BUG:
           pageContent = text.slice(text.indexOf("\n") + 1);
-          var contentElement = document.getElementById("content");
-          contentElement.value = pageContent;
+          eEditContent.value = pageContent;
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
-          document.getElementById("viewcontent").innerHTML = formatContent(pageContent);
+          eViewContent.innerHTML = formatContent(pageContent);
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
         }
@@ -257,19 +266,33 @@ function createLoadHandler(req/*, ts*/) {
 }
  
 function setStatus(text) {
-  var status = document.getElementById("status");
-  status.innerHTML = text;
+  eStatusLine.innerHTML = text;
 }
 
-function initLiki(u, t) {
+function initLiki(u, t, readonly, query) {
   timeout = t;
   mainURI = u;
   interval = false;
   lockKey = false;
+  pageIsReadOnly = readonly;
+  pageQuery = query;
   lastTimestamp = 0;
   transmitting = false;
+
+  // init the elements
+  eEditButton = document.getElementById('editchecker');
+  eViewContent = document.getElementById('viewcontent');
+  eEditContent = document.getElementById('content');
+  eStatusLine = document.getElementById('status');
+  eRecentChanges = document.getElementById('recentchanges');
+
   setEditMode(false);
   transmitChanges();
+
+  if (pageIsReadOnly) {
+    eEditButton.style.display = 'none';
+  }
+  //dumpVars();
   interval = setInterval('transmitChanges()', timeout);
 }
 
@@ -294,11 +317,31 @@ function transmitChanges() {
   if (editMode == true) {
     saveChanges();
   } else {
-    setStatus("Checking for changes....");
-    var req = createRequest();
-    req.onreadystatechange = createTimestampHandler(req);
-    req.open("GET", mainURI+"?action=timestamp", true);
-    req.send("");
+    // page has never been loaded:
+    if (lastTimestamp == 0) {
+      setStatus("Loading page....");
+      var req = createRequest();
+      req.onreadystatechange = createLoadHandler(req);
+      var qstr = "";
+      if (pageQuery != false) {
+        // TODO: URI decoding, etc.
+        qstr = "&q=" + pageQuery;
+      }
+      req.open("GET", mainURI+"?action=htmlload" + qstr, true);
+      req.send("");
+    } else {
+      setStatus("Checking for changes....");
+      var req = createRequest();
+      req.onreadystatechange = createTimestampHandler(req);
+      req.open("GET", mainURI+"?action=timestamp", true);
+      req.send("");
+    }
   }
 }
+
+
+function clearSearchField() {
+  document.getElementById('searchfield').value = '';
+}
+
 
