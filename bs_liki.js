@@ -109,7 +109,7 @@ function formatContent(input) {
 
 function getParagraphType(p) {
   if (p.match(/^[\#\*\-\+\"\;\|\!] /)) {
-    return p[0];
+    return p.charAt(0);
   } else {
     return '';
   }
