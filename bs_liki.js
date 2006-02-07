@@ -4,6 +4,7 @@
  * ©2005-2006 burningsoda.com
  */
 
+var baseURI;
 var mainURI;
 var timeout;
 var editMode;
@@ -55,11 +56,108 @@ function setRecentChanges(what) {
 }
 
 function formatContent(input) {
+  /* 1. make shure everything that tries to be a paragraph _really_
+   *    is delimited by at least one empty line. */
+  // one line paragraphs (section headings)
+  input = input.replace(/(^|\n)([\#\*])\ ([^\n]+)/g, '$1$2 $3\n');
+  // multiline paragraphs
+  input = input.replace(/(^|\n)([\-\+\"\;\|\!]\ ([^\n](\n\ [^\n]|[^\n])+))/g, '\n$1$2\n');
+  // lines
+  input = input.replace(/(^|\n)---+\ *\n/g, '$1---\n\n');
+  // now, split it up.
+  p = input.split(/\n\s*\n/);
+
+  input = "";
+  for (var i = 0; i < p.length; i++) {
+    var type = getParagraphType(p[i]);
+    var content = cleanParagraph(p[i]);
+    // dont format raw HTML
+    if (type != '!') {
+      content = formatParagraph(content);
+    }
+    // list-items
+    if (type == '-' || type == '+') {
+      if (i == 0 || getParagraphType(p[i-1]) != type) {
+        if (type == '-') input += "<ul>\n";
+        else input += "<ol>\n";
+      }
+      input += " <li>" + content + "</li>\n";
+      if (i == p.length - 1 || getParagraphType(p[i+1]) != type) {
+        if (type == '-') input += "</ul>\n";
+        else input += "</ol>\n";
+      }
+    } else if (type == '#') {
+      input += "\n\n<h1>" + content + "</h1>\n";
+    } else if (type == '*') {
+      input += "\n\n<h2>" + content + "</h2>\n";
+    } else if (type == '"') {
+      input += "<blockquote>" + content + "</blockquote>\n";
+    } else if (type == ';') {
+      input += "<pre>" + content + "</pre>\n";
+    } else if (type == '|') {
+      input += '<p style="text-align: center;">' + content + '</p>\n';
+    } else if (type == '') {
+      if (content == '---') input += "<hr />\n";
+      else input += "<p>" + content + "</p>\n";
+    } else {
+      input += "<br/><b>Typ: ["+type+"]</b>";
+      input += "<pre style='border: 1px solid red;'>"+content+"</pre>";
+    }
+  }
+  return input;
+}
+
+function getParagraphType(p) {
+  if (p.match(/^[\#\*\-\+\"\;\|\!] /)) {
+    return p[0];
+  } else {
+    return '';
+  }
+}
+
+function cleanParagraph(p) {
+  // clean the leading marker and/or spaces (for code)
+  return p.replace(/(^|\n)\ \ ([^\n]+)/g, '$1$2').replace(/^[\#\*\-\+\"\;\|\!] /, '');
+}
+
+function formatParagraph(p) {
+  // xml special characters
+  p = p.replace(/&/, '&amp;');
+  p = p.replace(/</, '&lt;');
+  p = p.replace(/>/, '&gt;');
+  // some symbols
+  p = p.replace(/([^-]|[\r\n])--([^-]|[\r\n])/g, '$1&ndash;$2');
+  p = p.replace(/([^-]|[\r\n])---([^-]|[\r\n])/g, '$1&mdash;$2');
+  // _emphasized_, *bold*, -striked through-
+  p = p.replace(/([\s\W])_([\S][\S\ ]*?[\S])_([\s\W])/g, '$1<em>$2</em>$3');
+  p = p.replace(/([\s\W])\*([\S][\S\ ]*?[\S])\*([\s\W])/g, '$1<strong>$2</strong>$3');
+  p = p.replace(/([\s\W])-([\S][\S\ ]*?[\S])-([\s\W])/g, '$1<s>$2</s>$3');
+  // externe links
+  p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)([\s]|$)/g, '$1<a class="external" href="$2">$2</a>$3');
+  // externe links (mit text)
+  p = p.replace(/\[(http\:\/\/[^\s\"\']+)\]/g, '<a class="external" href="$1">$2</a>');
+  p = p.replace(/\[(http\:\/\/[^\s\"\']+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
+  // liki-seiten
+  p = p.replace(/\[\[?([^\'\"\]\[\%\s\/\\]+)\]?\]/g,
+                '<a class="internal" href="' + baseURI + '/$1">$1</a>');
+  // liki-seiten (mit text)
+  p = p.replace(/(^|[^\\])\[\[?([^\'\"\]\[\%\s\/\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/g,
+                '$1<a class="internal" href="' + baseURI + '/$2">$3</a>');
+  // forced line breaks
+  p = p.replace(/\ \/\/\ *[\r\n]/g, "<br />");
+  // escaping
+  p = p.replace(/\\(.)/g, '$1');
+
+  return p;
+}
+
+function oldformatContent(input) {
+  /* sentences: [\S][\S\ ]*?[\S]+
+     urls:      http\:\/\/[^\s\"\'\(\)\[\]\{\}]+
+     pagenames: [^\'\"\]\[\%\s\/\\]+ */
   var preamble = ""
   input = preamble+input;
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
-  // links
-  // input = input.replace(/(^|\s+)(http\:\/\/[^\s\"\']+)(\s+|$)/g, "$1<a href=\"$2\">$2</a>$3");
   // linie
   input = input.replace(/[\r\n]\ *\-{3,}\ *[\r\n]/g, '<bs:p><hr/></bs:p>');
   // sonderzeichen
@@ -69,19 +167,30 @@ function formatContent(input) {
   input = input.replace(/([\s\W])_([\S][\S\ ]*?[\S])_([\s\W])/g, '$1<em>$2</em>$3');
   input = input.replace(/([\s\W])\*([\S][\S\ ]*?[\S])\*([\s\W])/g, '$1<strong>$2</strong>$3');
   input = input.replace(/([\s\W])-([\S][\S\ ]*?[\S])-([\s\W])/g, '$1<s>$2</s>$3');
-  // liki-seiten
-  input = input.replace(/\[\[([^\'\"\]\[\%\s]+)\]\]/g, '<a class="internal" href="'+baseURI+'/$1">$1</a>');
   // bilder
   input = input.replace(/^\s*(http\:\/\/[^\s\"\']+\.(gif|jpg|jpeg|png))\s*$/gm,
-                        "<bs:p><img class=\"centerpic\" src=\"$1\" alt=\"\" /></bs:p>");
+                        "<bs:p><a href=\"$1\"><img class=\"centerpic\" src=\"$1\" alt=\"\" /></a></bs:p>");
   // externe links
-  input = input.replace(/([\s]|^)(http\:\/\/[^\s\"\']+)([\s]|$)/g, '$1<a class="external" href="$2">$2</a>$3');
+  input = input.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)([\s]|$)/g, '$1<a class="external" href="$2">$2</a>$3');
+  // externe links (mit text)
+  input = input.replace(/\[(http\:\/\/[^\s\"\']+)\]/g, '<a class="external" href="$1">$2</a>');
+  input = input.replace(/\[(http\:\/\/[^\s\"\']+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
+  // liki-seiten
+  input = input.replace(/\[\[?([^\'\"\]\[\%\s\/\\]+)\]?\]/g, '<a class="internal" href="'+baseURI+'/$1">$1</a>');
+  // liki-seiten (mit text)
+  input = input.replace(/(^|[^\\])\[\[?([^\'\"\]\[\%\s\/\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/g, '$1<a class="internal" href="'+baseURI+'/$2">$3</a>');
   // listen
   input = input.replace(/^\-\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, "<bs:p><ul><li>$1</li></ul></bs:p>");
+  //input = input.replace(/<bs:li>
   // header
   input = input.replace(/^\#\ +([^\n]+)$/gm, '<bs:p><h1>$1</h1></bs:p>');
+  input = input.replace(/^\*\ +([^\n]+)$/gm, '<bs:p><h1>$1</h1></bs:p>');
   // blockquotes
   input = input.replace(/^\"\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><blockquote>$1</blockquote></bs:p>');
+  // code
+  input = input.replace(/^\;\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:code><pre>$1</pre></bs:code>');
+  //input = replaceBetween(input, '<bs:code>', '</bs:code>', /\n\ +/g, '\n');
+  //input = input.replace(/<bs:code>(.*\n)\s+([^\s]*)</bs:code>/g, '<bs:p>$
   // center
   input = input.replace(/^\|\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><p style=\"text-align:center\">$1</p></bs:p>');
   // damit sind KEINE breaks mehr nach paragraphen vorhanden:
@@ -89,6 +198,10 @@ function formatContent(input) {
   input = input.replace(/\s*<bs\:p>/g, "\n");
   // forcierte breaks
   input = input.replace(/\ \/\/\ *[\r\n]/g, "<br />");
+
+  // escapes
+  input = input.replace(/\\(.)/g, '$1');
+  //input = input.replace(/\\\\/g, '\\');
   // absaetze
   input = input.replace(/\n\s*\n/g, "<br /><br />\n");
   return input;
@@ -237,7 +350,12 @@ function createTimestampHandler(req) {
         var r = createRequest();
         r.onreadystatechange = createLoadHandler(r/*, req.responseText*/);
         //r.open("GET", mainURI+"?action=plainload", true);
-        r.open("GET", mainURI+"?action=htmlload", true);
+        var qstr = "";
+        if (pageQuery != false) {
+          // TODO: URI decoding, etc.
+          qstr = "&q=" + pageQuery;
+        }
+        r.open("GET", mainURI+"?action=htmlload" + qstr, true);
         //r.open("GET", mainURI+"?action=load", true);
         r.send("");
         return;
@@ -286,6 +404,8 @@ function initLiki(u, t, readonly, query) {
   lastTimestamp = 0;
   transmitting = false;
 
+  baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
+  
   // init the elements
   eEditButton = document.getElementById('editchecker');
   eViewContent = document.getElementById('viewcontent');
