@@ -44,7 +44,7 @@ function setRecentChanges(what) {
   if (!what) return;
   what = decodeURIComponent(what);
   var c = "";
-  var changes = what.split(" ");
+  var changes = what.split(",");
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   for (var i = 0; i < changes.length; i++) {
     if (i > 0 && i < changes.length) c += " |"

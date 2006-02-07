@@ -14,25 +14,44 @@ if (strlen($key) != 32) {
   $key = false;
 }
 
-$specialpages = array('index','search');
+$specialpages = array('index', 'search', 'timeindex');
 if (in_array(strtolower(bs_request('page', false)), $specialpages)) {
   $havespecialpage = true;
 } else {
   $havespecialpage = false;
 }
 
+  
 
 $b = new bsLikiBackend();
 
+function recentChangesHeader() {
+  global $b;
+  //$r = $b->getRecentChanges(10);
+  $str = "";
+  foreach ($b->getRecentChanges(10) as $p) {
+    $str .= $p['name']."/".$p['howlongago'].",";
+  }
+  header('X-LIKI-RecentChanges: '.rawurlencode(substr($str,0,strlen($str)-1)));
+}
+
 if (bs_request('action') == 'htmlload') {
-  header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
+  //header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
+  recentChangesHeader();
   if (strtolower($page) == 'index') {
-    $index = "# Liki Index\n";
+    $index = "# Liki Pages sorted alphabetically\nswitch to [[TimeIndex]].\n";
     $list = $b->getPageList();
     foreach ($list as $i)
       $index .= "- [[$i]]\n";
     $p = array('content' => $index,
                'timestamp' => '1');
+  } elseif (strtolower($page) == 'timeindex') {
+    $index = "# Liki Pages sorted by modification time\nswitch to alphabetical [[Index]].\n";
+    $list = $b->getRecentChanges(false);
+    foreach ($list as $i)
+      $index .= "- [[${i['name']}]] (${i['howlongago']})\n";
+    $p = array('content' => $index,
+               'timestamp' => time());
   } elseif (strtolower($page) == 'search') {
     if (bs_request('q') != '') {
       $index = "# Search for \"".htmlentities(bs_request('q', false))."\"\n";
@@ -60,10 +79,12 @@ if (bs_request('action') == 'htmlload') {
   echo($p['content']);
   exit;
 } elseif (bs_request('action') == 'timestamp') {
-  header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
+  recentChangesHeader();
+  //header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
   header('Content-type: text/plain; charset=UTF-8');
+  // special pages are _live_
   if ($havespecialpage) {
-    echo "1";
+    echo time();
   } else {
     $p = $b->getPage($page);
     echo($p['timestamp']);

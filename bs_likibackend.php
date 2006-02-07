@@ -132,27 +132,33 @@ class bsLikiBackend {
     }
   }
 
-  function getLastChanges($count = 1) {
+  function getRecentChanges($count = 10) {
     $changes = "";
     $timestamp = time();
-    $res = mysql_query("SELECT name,timestamp FROM ".$this->table." ORDER BY timestamp DESC LIMIT $count");
+    $q = "SELECT name,timestamp FROM ".$this->table." ORDER BY timestamp DESC";
+    if ($count !== false)
+      $q .= " LIMIT $count";
+    $res = mysql_query($q);
     if (!$res) return false;
+    $list = array();
     while ($r = mysql_fetch_assoc($res)) {
       $seconds = $timestamp - $r['timestamp'];
       $minutes = floor($seconds / 60); $seconds %= 60;
       $hours = floor($minutes / 60); $minutes %= 60;
       $days = floor($hours / 24); $hours %= 24;
-      $changes .= " ".$r['name']. "/";
+      $changes = "";
       if ($days > 0)
-        $changes .= "${days}d+";
+        $changes .= "${days}d ";
       if ($days > 0 || $hours > 0)
         $changes .= str_pad($hours, 2, '0', STR_PAD_LEFT).'h';
       if ($days > 0 || $hours > 0 || $minutes > 0)
         $changes .= str_pad($minutes, 2, '0', STR_PAD_LEFT).'m';
       $changes .= str_pad($seconds, 2, '0', STR_PAD_LEFT).'s';
+      $list[] = array('name'       => $r[name],
+                      'howlongago' => $changes);
     }
     mysql_free_result($res);
-    return substr($changes,1);
+    return $list;
   }
 
   function getPageList() {
