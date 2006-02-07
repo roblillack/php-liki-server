@@ -304,3 +304,36 @@ li.termin h2 {
   margin-bottom: 5px;
 }
 
+a.internal:before {
+  content: '[';
+  color: #ccc;
+}
+
+a.internal:after {
+  content: ']';
+  color: #ccc;
+}
+
+a.internal {
+  color: blue;
+  text-decoration: none;
+}
+
+a.internal:hover {
+  background-color: #ccc;
+}
+
+a.external:before {
+  content: '∞';
+  color: #ccc;
+}
+
+a.external {
+  text-decoration: none;
+  border-bottom: 1px solid #ccc;
+}
+
+a.external:hover {
+  border-bottom-color: red;
+}
+

@@ -70,7 +70,7 @@ function formatContent(input) {
   input = input.replace(/([\s\W])\*([\S][\S\ ]*?[\S])\*([\s\W])/g, '$1<strong>$2</strong>$3');
   input = input.replace(/([\s\W])-([\S][\S\ ]*?[\S])-([\s\W])/g, '$1<s>$2</s>$3');
   // liki-seiten
-  input = input.replace(/\[\[([a-zA-Z0-9\-äöüßÄÖÜ]+)\]\]/g, '<a href="'+baseURI+'/$1">$1</a>');
+  input = input.replace(/\[\[([^\'\"\]\[\%\s]+)\]\]/g, '<a class="internal" href="'+baseURI+'/$1">$1</a>');
   // listen
   input = input.replace(/^\-\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, "<bs:p><ul><li>$1</li></ul></bs:p>");
   // header
@@ -82,6 +82,8 @@ function formatContent(input) {
   // bilder
   input = input.replace(/^\s*(http\:\/\/[^\s\"\']+\.(gif|jpg|jpeg|png))\s*$/gm,
                         "<bs:p><img class=\"centerpic\" src=\"$1\" alt=\"\" /></bs:p>");
+  // externe links
+  input = input.replace(/([\s]|^)(http\:\/\/[^\s\"\']+)([\s]|$)/g, '$1<a class="external" href="$2">$2</a>$3');
   // damit sind KEINE breaks mehr nach paragraphen vorhanden:
   input = input.replace(/<\/bs\:p>\s*/g, "\n");
   input = input.replace(/\s*<bs\:p>/g, "\n");

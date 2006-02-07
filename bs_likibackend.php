@@ -86,25 +86,29 @@ class bsLikiBackend {
     }
   }*/
 
+  function cleanPageName($name) {
+    return preg_replace('[\'\"\]\[\%\s]', '', $name);
+  }
+
   function assurePageExists($page) {
-    $page = addslashes($page);
+    $page = $this->cleanPageName($page);
     @mysql_query('INSERT INTO ' . $this->table . "(name, timestamp, unchanged) VALUES ('$page', 0, 0)", $this->dbh);
   }
 
   function autoFree($page) {
     $this->assurePageExists($page);
-    $page = addslashes($page);
+    $page = $this->cleanPageName($page);
     $timestamp = time();
     mysql_query("UPDATE ".$this->table." SET unchanged=0, lockkey='' WHERE ".
-                "(unchanged>=10 OR timestamp<$timestamp-60) AND name='$page'", $this->dbh);
+                "(unchanged>=10 OR timestamp<$timestamp-60) AND name LIKE '$page'", $this->dbh);
   }
 
   function lockPage($page, $key) {
     $this->autoFree($page);
     $timestamp = time();
     $key = addslashes($key);
-    $page = addslashes($page);
-    $query = 'UPDATE '.$this->table." SET lockkey='$key',timestamp=$timestamp WHERE name='$page' AND lockkey=''";
+    $page = $this->cleanPageName($page);
+    $query = 'UPDATE '.$this->table." SET lockkey='$key',timestamp=$timestamp WHERE name LIKE '$page' AND lockkey=''";
     mysql_query($query, $this->dbh);
 
     if (mysql_affected_rows($this->dbh) != 1) {
@@ -116,11 +120,11 @@ class bsLikiBackend {
 
   function freePage($page, $key) {
     $this->assurePageExists($page);
-    $page = addslashes($page);
+    $page = $this->cleanPageName($page);
     $key = addslashes($key);
     $timestamp = time();
     mysql_query("UPDATE ".$this->table." SET unchanged=0, lockkey='' WHERE ".
-                "lockkey='$key' AND name='$page'", $this->dbh);
+                "lockkey='$key' AND name LIKE '$page'", $this->dbh);
     if (mysql_affected_rows($this->dbh) != 1) {
       return false;
     } else {
@@ -179,8 +183,8 @@ class bsLikiBackend {
    
   function getPage($page) {
     $this->autoFree($page);
-    $page = addslashes($page);
-    $res = mysql_query("SELECT * FROM " .$this->table. " WHERE name='$page'");
+    $page = $this->cleanPageName($page);
+    $res = mysql_query("SELECT * FROM " .$this->table. " WHERE name LIKE '$page'");
     if (!$res) {
       trigger_error("could not get content of page $page");
       return false;
@@ -205,10 +209,10 @@ class bsLikiBackend {
     }
     //$timestamp = time();
     $key = addslashes($key);
-    $page = addslashes($page);
+    $page = $this->cleanPageName($page);
     $content = addslashes($content);
     $query = 'UPDATE '.$this->table." SET ${timestamp}content='$content' ".
-             "WHERE name='$page' AND (lockkey='$key')";
+             "WHERE name LIKE '$page' AND (lockkey='$key')";
              /*"(timestamp<$timestamp-60) OR ".                  // letztes update länger als ne minute her
              "(lockkey<>'$key' AND unchanged>=10))";           // jemand anderes hat unchanged updates überschritten*/
     //trigger_error($query);
