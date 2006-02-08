@@ -133,9 +133,9 @@ function formatParagraph(p) {
   p = p.replace(/(\W|^)\-(\S[\S\ ]*?\S)\-(?=(\W|$))/g, '$1<s>$2</s>');
   p = p.replace(/(\W|^)\_(\S[\S\ ]*?\S)\_(?=(\W|$))/g, '$1<em>$2</em>');
   // externe links
-  p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s]|$))/g, '$1<a class="external" href="$2">$2</a>');
+  p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/g, '$1<a class="external" href="$2">$2</a>');
   // externe links (mit text)
-  p = p.replace(/\[(http\:\/\/[^\s\"\']+)\]/g, '<a class="external" href="$1">$2</a>');
+  p = p.replace(/\[(http\:\/\/[^\s\"\']+)\]/g, '<a class="external" href="$1">$1</a>');
   p = p.replace(/\[(http\:\/\/[^\s\"\']+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
   // liki-seiten
   p = p.replace(/\[\[?([^\'\"\]\[\%\s\/\\]+)\]?\]/g,
