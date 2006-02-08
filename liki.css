@@ -349,7 +349,8 @@ a.internal:hover {
 }
 
 a.external:before {
-  content: '∞';
+  /* u+221e: INFINITY */
+  content: '\221e';
   color: #ccc;
 }
 
