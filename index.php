@@ -21,7 +21,11 @@ if (in_array(strtolower(bs_request('page', false)), $specialpages)) {
   $havespecialpage = false;
 }
 
-  
+if (bs_request('legacymode') == 'true') {
+  $legacyMode = true;
+} else {
+  $legacyMode = false;
+}
 
 $b = new bsLikiBackend();
 
@@ -35,9 +39,8 @@ function recentChangesHeader() {
   header('X-LIKI-RecentChanges: '.rawurlencode(substr($str,0,strlen($str)-1)));
 }
 
-if (bs_request('action') == 'htmlload') {
-  //header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
-  recentChangesHeader();
+function getPage($page) {
+  global $b;
   if (strtolower($page) == 'index') {
     $index = "# Liki Pages sorted alphabetically\nswitch to [[TimeIndex]].\n";
     $list = $b->getPageList();
@@ -66,6 +69,14 @@ if (bs_request('action') == 'htmlload') {
   } else {
     $p = $b->getPage($page);
   }
+
+  return $p;
+}
+
+if (bs_request('action') == 'htmlload') {
+  //header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
+  recentChangesHeader();
+  $p = getPage($page);
   header('X-LIKI-Timestamp: '.$p['timestamp']);
   header('Content-type: text/html; charset=UTF-8');
   // this is just a fix for a safari bug.
@@ -175,8 +186,8 @@ echo XHTML_11_HEADER;
 <html>
  <head>
   <title>liki &mdash; the LIve wiKI: <?=$page;?></title>
-  <script type="text/javascript" src="bs_liki.js"></script>
-  <link rel="stylesheet" type="text/css" href="liki.css" />
+  <?php if (!$legacyMode) { ?><script type="text/javascript" src="<?=(bs_baseurl());?>/bs_liki.js"></script><?php } ?>
+  <link rel="stylesheet" type="text/css" href="<?=(bs_baseurl());?>/liki.css" />
   <link rel="icon" href="favicon.ico" type="image/ico" />
   <link rel="Shortcut Icon" type="image/x-icon" href="<?=(bs_baseurl());?>/favicon.ico" />
  </head>
@@ -185,15 +196,23 @@ echo XHTML_11_HEADER;
   <div id="toolbar">
    <a id="editchecker" href="javascript:switchEditMode()" class="readmode">...</a>
   </div>
+<?php if (!$legacyMode) { ?>
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
+<?php } ?>
   <div id="navibar">
    <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input accessKey="s" onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form>
    <a accessKey="i" href="<?=(bs_baseurl().'/INDEX');?>"><u>i</u>ndex</a>,
    recently changed: <span id="recentchanges"></span>
   </div>
-  <div id='viewcontent'></div>
+  <div <?php if ($legacyMode) { echo 'style="visibility: visible;"'; } ?> id='viewcontent'><?php
+if ($legacyMode) {
+  $p = getPage($page);
+  echo "<h1>$page</h1>\n";
+  echo "<pre>".htmlspecialchars($p['content'])."</pre>\n";
+}
+  ?></div>
   <div id='status'></div>
   <!--<div id='changer'></div>-->
  </body>

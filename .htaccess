@@ -14,10 +14,9 @@ RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^.*$ - [L]
 
 RewriteCond %{ENV:changed} !^yes$
-RewriteRule ^(.*)/$ index.php?page=$1 [QSA,E=changed:yes]
-
+RewriteRule ^([^/]*)/?$ index.php?page=$1 [QSA,E=changed:yes]
 RewriteCond %{ENV:changed} !^yes$
-RewriteRule ^(.*)$ index.php?page=$1 [QSA,E=changed:yes]
+RewriteRule ^([^/]*)/legacy/?$ index.php?page=$1&legacymode=true [QSA,E=changed:yes]
 
 RewriteCond %{ENV:changed} ^yes$
 RewriteCond %{REQUEST_URI} ^/modules/liki/.*$
