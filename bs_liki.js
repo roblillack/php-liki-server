@@ -25,28 +25,12 @@ var eEditForm;
 var eStatusLine;
 var eRecentChanges;
 
-function dumpVars() {
-  alert("VARIABLES:\n" +
-        "mainURI: " + mainURI + "\n");
-}
-
-/*function shakeElement(id, width) {
-  var e = document.getElementById(id);
-
-  if (width % 2) {
-    e.style.left = e.style.left - 10;
-  } else {
-    alert('bla!');
-    e.style.left = e.style.left + width*2 + 1;
-  }
-}*/
-
 function setRecentChanges(what) {
   if (!what) return;
   what = decodeURIComponent(what);
   var c = "";
   var changes = what.split(",");
-  var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
+  //var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   for (var i = 0; i < changes.length; i++) {
     if (i > 0 && i < changes.length) c += " |"
     var data = changes[i].split("/");
@@ -56,16 +40,16 @@ function setRecentChanges(what) {
 }
 
 function formatContent(input) {
-  /* 1. make shure everything that tries to be a paragraph _really_
-   *    is delimited by at least one empty line. */
-  // one line paragraphs (section headings)
-  input = input.replace(/(^|\n)([\#\*])\ ([^\n]+)/g, '$1$2 $3\n');
+  /* make shure everything that tries to be a paragraph _really_
+   * is delimited by at least one empty line. */
+  // one line paragraphs (i.e. section headings)
+  input = input.replace(/(^|\n)([\#\*])\ ([^\n]+)/g, '$1\n$2 $3\n');
   // multiline paragraphs
   input = input.replace(/(^|\n)([\-\+\"\;\|\!]\ ([^\n](\n\ [^\n]|[^\n])+))/g, '\n$1$2\n');
   // lines
   input = input.replace(/(^|\n)---+\ *\n/g, '$1---\n\n');
   // now, split it up.
-  p = input.split(/\n\s*\n/);
+  p = input.replace(/^\s*/,'').split(/\n\s*\n/);
 
   input = "";
   for (var i = 0; i < p.length; i++) {
@@ -168,9 +152,6 @@ function formatParagraph(p) {
 }
 
 function oldformatContent(input) {
-  /* sentences: [\S][\S\ ]*?[\S]+
-     urls:      http\:\/\/[^\s\"\'\(\)\[\]\{\}]+
-     pagenames: [^\'\"\]\[\%\s\/\\]+ */
   var preamble = ""
   input = preamble+input;
   var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
