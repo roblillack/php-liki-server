@@ -72,47 +72,63 @@ function formatContent(input) {
     var type = getParagraphType(p[i]);
     var content = cleanParagraph(p[i]);
     // dont format raw HTML
-    if (type != '!') {
+    if (type != '!' && type != 'image' && type != 'line') {
       content = formatParagraph(content);
     }
-    // list-items
-    if (type == '-' || type == '+') {
-      if (i == 0 || getParagraphType(p[i-1]) != type) {
-        if (type == '-') input += "<ul>\n";
-        else input += "<ol>\n";
-      }
-      input += " <li>" + content + "</li>\n";
-      if (i == p.length - 1 || getParagraphType(p[i+1]) != type) {
-        if (type == '-') input += "</ul>\n";
-        else input += "</ol>\n";
-      }
-    } else if (type == '#') {
-      input += "\n\n<h1>" + content + "</h1>\n";
-    } else if (type == '*') {
-      input += "\n\n<h2>" + content + "</h2>\n";
-    } else if (type == '"') {
-      input += "<blockquote>" + content + "</blockquote>\n";
-    } else if (type == ';') {
-      input += "<pre>" + content + "</pre>\n";
-    } else if (type == '|') {
-      input += '<p style="text-align: center;">' + content + '</p>\n';
-    } else if (type == '') {
-      if (content == '---') input += "<hr />\n";
-      else input += "<p>" + content + "</p>\n";
-    } else {
-      input += "<br/><b>Typ: ["+type+"]</b>";
-      input += "<pre style='border: 1px solid red;'>"+content+"</pre>";
+    switch (type) {
+      case '':
+        // normal text paragraphs
+        input += "<p>" + content + "</p>\n";
+        break;
+      case '-': case '+':
+        // lists
+        if (i == 0 || getParagraphType(p[i-1]) != type) {
+          if (type == '-') input += "<ul>\n";
+          else input += "<ol>\n";
+        }
+        input += " <li>" + content + "</li>\n";
+        if (i == p.length - 1 || getParagraphType(p[i+1]) != type) {
+          if (type == '-') input += "</ul>\n";
+          else input += "</ol>\n";
+        }
+        break;
+      case '#':
+        input += "\n\n<h1>" + content + "</h1>\n";
+        break;
+      case '*':
+        input += "\n\n<h2>" + content + "</h2>\n";
+        break;
+      case '"':
+        input += "<blockquote>" + content + "</blockquote>\n";
+        break;
+      case ';':
+        input += "<pre>" + content + "</pre>\n";
+        break;
+      case '|':
+        input += '<p style="text-align: center;">' + content + '</p>\n';
+        break;
+      case 'image':
+        input += '<img src="' + content + '" alt="" class="centerpic" />\n';
+        break;
+      case 'line':
+        input += '<hr />\n';
+        break;
+      case 'raw':
+        inpute += content;
+        break;
+      default:
+        input += "<br/><b>Type: ["+type+"]</b>";
+        input += "<pre style='border: 1px solid red;'>"+content+"</pre>";
     }
   }
   return input;
 }
 
 function getParagraphType(p) {
-  if (p.match(/^[\#\*\-\+\"\;\|\!] /)) {
-    return p.charAt(0);
-  } else {
-    return '';
-  }
+  if (p.match(/^[\#\*\-\+\"\;\|\!] /)) return p.charAt(0);
+  else if (p.match(/^---+\s*$/)) return 'line';
+  else if (p.match(/^http\:\/\/[^\s\"\']+\.(gif|jpg|jpeg|png)\s*$/)) return 'image';
+  else return '';
 }
 
 function cleanParagraph(p) {

@@ -284,6 +284,12 @@ th {
   background-color: #eef;
 }
 
+#viewcontent hr {
+  height: 0;
+  border: 0;
+  border-top: 1px solid #ccc;
+}
+
 .centerpic {
   display: block;
   max-width: 98%;
