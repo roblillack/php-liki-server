@@ -56,7 +56,7 @@ function formatContent(input) {
     var type = getParagraphType(p[i]);
     var content = cleanParagraph(p[i]);
     // dont format raw HTML
-    if (type != '!' && type != 'image' && type != 'line') {
+    if (type != 'raw' && type != 'image' && type != 'line') {
       content = formatParagraph(content);
     }
     switch (type) {
@@ -98,7 +98,7 @@ function formatContent(input) {
         input += '<hr />\n';
         break;
       case 'raw':
-        inpute += content;
+        input += content;
         break;
       default:
         input += "<br/><b>Type: ["+type+"]</b>";
