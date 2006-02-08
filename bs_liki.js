@@ -138,9 +138,9 @@ function cleanParagraph(p) {
 
 function formatParagraph(p) {
   // xml special characters
-  p = p.replace(/&/, '&amp;');
-  p = p.replace(/</, '&lt;');
-  p = p.replace(/>/, '&gt;');
+  p = p.replace(/&/g, '&amp;');
+  p = p.replace(/</g, '&lt;');
+  p = p.replace(/>/g, '&gt;');
   // some symbols
   p = p.replace(/(^|[^-])--(?=([^-]|$))/g, '$1&ndash;');
   p = p.replace(/(^|[^-])---(?=([^-]|$))/g, '$1&mdash;');
