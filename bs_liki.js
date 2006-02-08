@@ -142,14 +142,14 @@ function formatParagraph(p) {
   p = p.replace(/</, '&lt;');
   p = p.replace(/>/, '&gt;');
   // some symbols
-  p = p.replace(/([^-]|[\r\n])--([^-]|[\r\n])/g, '$1&ndash;$2');
-  p = p.replace(/([^-]|[\r\n])---([^-]|[\r\n])/g, '$1&mdash;$2');
-  // _emphasized_, *bold*, -striked through-
-  p = p.replace(/([\s\W])_([\S][\S\ ]*?[\S])_([\s\W])/g, '$1<em>$2</em>$3');
-  p = p.replace(/([\s\W])\*([\S][\S\ ]*?[\S])\*([\s\W])/g, '$1<strong>$2</strong>$3');
-  p = p.replace(/([\s\W])-([\S][\S\ ]*?[\S])-([\s\W])/g, '$1<s>$2</s>$3');
+  p = p.replace(/(^|[^-])--(?=([^-]|$))/g, '$1&ndash;');
+  p = p.replace(/(^|[^-])---(?=([^-]|$))/g, '$1&mdash;');
+  // _emphasized_, *bold*, -striked-
+  p = p.replace(/(\W|^)\*(\S[\S\ ]*?\S)\*(?=(\W|$))/g, '$1<strong>$2</strong>');
+  p = p.replace(/(\W|^)\-(\S[\S\ ]*?\S)\-(?=(\W|$))/g, '$1<s>$2</s>');
+  p = p.replace(/(\W|^)\_(\S[\S\ ]*?\S)\_(?=(\W|$))/g, '$1<em>$2</em>');
   // externe links
-  p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)([\s]|$)/g, '$1<a class="external" href="$2">$2</a>$3');
+  p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s]|$))/g, '$1<a class="external" href="$2">$2</a>');
   // externe links (mit text)
   p = p.replace(/\[(http\:\/\/[^\s\"\']+)\]/g, '<a class="external" href="$1">$2</a>');
   p = p.replace(/\[(http\:\/\/[^\s\"\']+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
