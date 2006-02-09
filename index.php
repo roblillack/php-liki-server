@@ -101,7 +101,7 @@ if (bs_request('action') == 'uploadform') {
     //trigger_error('old: '.$_FILES['userfile']['tmp_name']."new: $bs_classpath/../pix/$newname");
     if (@move_uploaded_file($_FILES['userfile']['tmp_name'], "$bs_classpath/../pix/$newname") === true) {
       $result = 'Success';
-      $url = bs_baseurl()."/pix/$newname";
+      $url = bs_url(true)."/pix/$newname";
     }
   }
 ?>

@@ -53,7 +53,7 @@ function uploadSuccess(picurl) {
   var cursorpos = eEditContent.selectionStart;
   var contentBefore = eEditContent.value.substring(0, cursorpos);
   var contentAfter = eEditContent.value.substring(cursorpos);
-  alert('picurl: ' + picurl + '\ncursorpos: ' +cursorpos);
+  //alert('picurl: ' + picurl + '\ncursorpos: ' +cursorpos);
   eEditContent.value = contentBefore + picurl + contentAfter;
   eEditContent.selectionStart = cursorpos + picurl.length;
   eEditContent.selectionEnd = cursorpos + picurl.length;
