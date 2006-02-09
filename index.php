@@ -85,7 +85,6 @@ if (bs_request('action') == 'uploadform') {
  <body id="uploadbody">
   <form id="uploadform" action="<?=$pageURI;?>" method="post" enctype="multipart/form-data">
    <input type="hidden" name="action" value="uploadpic" />
-   <input type="hidden" name="key" value="" />
    <input type="file" name="userfile" value="" onchange="doUpload();" />
   </form>
  </body>
@@ -97,7 +96,7 @@ if (bs_request('action') == 'uploadform') {
   $url = '';
   if (isset($_FILES['userfile']) && !empty($_FILES['userfile']['tmp_name'])) {
     $tmp = $_FILES['userfile']['tmp_name'];
-    $newname = time().'-'.preg_replace('/[^0-9a-zA-Z_\-\.]/', '_', $_FILES['userfile']['name']);
+    $newname = time().'-'.preg_replace('/[^0-9a-zA-Z_\-\.]/', '_', bs_request('page').'--'.$_FILES['userfile']['name']);
     //trigger_error('old: '.$_FILES['userfile']['tmp_name']."new: $bs_classpath/../pix/$newname");
     if (@move_uploaded_file($_FILES['userfile']['tmp_name'], "$bs_classpath/../pix/$newname") === true) {
       $result = 'Success';
