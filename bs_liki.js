@@ -19,11 +19,88 @@ var transmitting;
 var lastTimestamp;
 // DOM nodes:
 var eEditButton;
+var eUploadButton;
 var eViewContent;
 var eEditContent;
 var eEditForm;
 var eStatusLine;
 var eRecentChanges;
+var eUploadIFrame;
+
+var lastContentEvent;
+//var lastContentCursorPosition;
+
+function clickUploadButton() {
+  if (!eUploadIFrame.style.display || eUploadIFrame.style.display == 'none') {
+    eUploadIFrame.setAttribute('src', mainURI+'?action=uploadform');
+    eUploadIFrame.style.display = 'block';
+    //eUploadIFrame.contentDocument.getElementById('uploadform').elements['userfile'].click();
+  } else {
+    eUploadIFrame.style.display = 'none';
+  }
+}
+
+function doUpload() {
+  //eEditContent = window.parent.document.getElementById('content');
+  document.getElementById('uploadform').submit();
+  document.getElementById('uploadform').style.display = 'none';
+}
+
+function uploadSuccess(picurl) {
+  var eIFrame = window.parent.document.getElementById('uploadiframe');
+  eIFrame.style.display = 'none';
+  eEditContent = window.parent.document.getElementById('content');
+  var cursorpos = eEditContent.selectionStart;
+  var contentBefore = eEditContent.value.substring(0, cursorpos);
+  var contentAfter = eEditContent.value.substring(cursorpos);
+  alert('picurl: ' + picurl + '\ncursorpos: ' +cursorpos);
+  eEditContent.value = contentBefore + picurl + contentAfter;
+  eEditContent.selectionStart = cursorpos + picurl.length;
+  eEditContent.selectionEnd = cursorpos + picurl.length;
+  eEditContent.focus();
+}
+
+/*function handleContentEvent(name) {
+  //document.getElementById('uploadform').elements['filedroptarget'].value = 'Content-Event: ' +name;
+  var eIFrame = document.getElementById('uploadiframe').contentDocument;
+
+  switch (name) {
+    case 'mouseout':
+      pageContent = eEditContent.value;
+      lastContentCursorPosition = eEditContent.selectionStart;
+      eIFrame.getElementById('uploadform').elements['filedroptarget'].value = 'cursor: ' +lastContentCursorPosition;
+      break;
+    case 'mouseover':
+      if (lastContentEvent == 'mouseout' && pageContent != eEditContent.value) {
+        var endPos = eEditContent.selectionStart;
+        var beginPos = pageContent.length - eEditContent.value.substring(endPos).length;
+        var filename = eEditContent.value.substring(beginPos, endPos);
+        eEditContent.value = pageContent;
+        eEditContent.selectionStart = beginPos;
+        eEditContent.selectionEnd = beginPos;
+        //eEditContent.focus();
+        //pageContent = eEditContent.value;
+        //alert('SOMETHING HAS BEEN DROPPED: '+filename);
+        eIFrame.getElementById('uploadform').elements['picfile'].setAttribute('value', filename);
+        eIFrame.getElementById('uploadform').elements['cursorpos'].setAttribute('value', beginPos);
+      }
+      break;
+    default:
+  }
+  lastContentEvent = name;
+}
+
+function fileDropped() {
+  var uploadForm = document.getElementById('uploadform');
+  var inputField = uploadForm.elements['filedroptarget'];
+  var fileField = uploadForm.elements['picfile'];
+
+  if (fileField.value == inputField.value) return;
+  fileField.value = inputField.value;
+  uploadForm.submit();
+
+  //alert('dateiname: '+uploadForm.elements['filedroptarget'].value);
+}*/
 
 function setRecentChanges(what) {
   if (!what) return;
@@ -213,6 +290,7 @@ function setEditMode(onoff) {
     eEditButton.setAttribute('class', 'readmode');
     eEditButton.setAttribute('accessKey', 'e');
     eEditButton.innerHTML = '<u>e</u>dit';
+    eUploadButton.style.display = 'none';
     body.style.overflow = 'auto';
     setStatus('Ready.');
   } else {
@@ -221,6 +299,8 @@ function setEditMode(onoff) {
     eEditButton.setAttribute('class', 'editmode');
     eEditButton.setAttribute('accessKey', 'q');
     eEditButton.innerHTML = 'save &amp; <u>q</u>uit';
+    eUploadButton.style.display = 'inline';
+    eUploadIFrame.style.display = 'none';
     body.style.overflow = 'hidden';
     setStatus('Editing...');
     eEditContent.focus();
@@ -405,12 +485,14 @@ function initLiki(u, t, readonly, query) {
   
   // init the elements
   eEditButton = document.getElementById('editchecker');
+  eUploadButton = document.getElementById('uploadbutton');
   eViewContent = document.getElementById('viewcontent');
   eEditForm = document.getElementById('contenteditor');
   eEditContent = document.getElementById('content');
   eStatusLine = document.getElementById('status');
   eRecentChanges = document.getElementById('recentchanges');
-
+  eUploadIFrame = document.getElementById('uploadiframe');
+  
   setEditMode(false);
   transmitChanges();
 

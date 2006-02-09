@@ -106,7 +106,48 @@ a#likititle:hover:after {
   overflow: hidden;
 }
 
-#toolbar a {
+#uploadiframe {
+  position: fixed;
+  display: none;
+  right: 60px;
+  top: 12px;
+  width: 400px;
+  height: 50px;
+  border: 1px solid #999;
+  z-index: 100;
+  margin: 0;
+  padding: 0;
+}
+
+#uploadbody {
+  background-color: #555;
+  margin: 0;
+  padding: 15px;
+  border: 0;
+  overflow: hidden;
+}
+
+#uploadbody h1 {
+  color: white;
+  text-align: center;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+#uploadform input {
+  width: 100%;
+  height: 100%;
+  color: black;
+  background-color: #ddd;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  color: white;
+  font-size: 10px;
+}
+
+#toolbar span, #toolbar a {
   height: 12px;
   padding: 0;
   margin: 0;
@@ -116,12 +157,21 @@ a#likititle:hover:after {
   padding-left: 2px;
   padding-right: 2px;
   text-decoration: none;
+  color: #ccc;
+}
+
+#toolbar a {
   color: black;
 }
+
 #toolbar a:hover {
   background: black;
   color: white;
   text-decoration: none;
+}
+
+#uploadbutton {
+  display: none;
 }
 
 .readmode {

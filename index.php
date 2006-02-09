@@ -73,7 +73,51 @@ function getPage($page) {
   return $p;
 }
 
-if (bs_request('action') == 'htmlload') {
+if (bs_request('action') == 'uploadform') {
+  $pageURI = bs_url(true)."/$page";
+?>
+<html>
+ <head>
+  <title>liki</title>
+  <link rel="stylesheet" type="text/css" href="<?=(bs_baseurl());?>/liki.css" />
+  <script type="text/javascript" src="<?=(bs_baseurl());?>/bs_liki.js"></script>
+ </head>
+ <body id="uploadbody">
+  <form id="uploadform" action="<?=$pageURI;?>" method="post" enctype="multipart/form-data">
+   <input type="hidden" name="action" value="uploadpic" />
+   <input type="hidden" name="key" value="" />
+   <input type="file" name="userfile" value="" onchange="doUpload();" />
+  </form>
+ </body>
+</html>
+<?php
+  exit;
+} elseif (bs_request('action') == 'uploadpic') {
+  $result = 'Failure';
+  $url = '';
+  if (isset($_FILES['userfile']) && !empty($_FILES['userfile']['tmp_name'])) {
+    $tmp = $_FILES['userfile']['tmp_name'];
+    $newname = time().'-'.preg_replace('/[^0-9a-zA-Z_\-\.]/', '_', $_FILES['userfile']['name']);
+    //trigger_error('old: '.$_FILES['userfile']['tmp_name']."new: $bs_classpath/../pix/$newname");
+    if (@move_uploaded_file($_FILES['userfile']['tmp_name'], "$bs_classpath/../pix/$newname") === true) {
+      $result = 'Success';
+      $url = bs_baseurl()."/pix/$newname";
+    }
+  }
+?>
+<html>
+ <head>
+  <title>liki</title>
+  <link rel="stylesheet" type="text/css" href="<?=(bs_baseurl());?>/liki.css" />
+  <script type="text/javascript" src="<?=(bs_baseurl());?>/bs_liki.js"></script>
+ </head>
+ <body id="uploadbody" onload="uploadSuccess('<?=$url;?>');">
+  <h1><?=$result;?></h1>
+ </body>
+</html>
+<?php
+  exit;
+} elseif (bs_request('action') == 'htmlload') {
   //header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
   recentChangesHeader();
   $p = getPage($page);
@@ -194,6 +238,7 @@ echo XHTML_11_HEADER;
  <body id="mainbody" onLoad="initLiki(<?=$params?>)">
   <a accessKey="f" href="<?=(bs_baseurl().'/frontpage');?>" id="likititle">the <em>#burningsoda</em> liki</a>
   <div id="toolbar">
+   <span id="uploadbutton"><a accessKey="u" href="javascript:clickUploadButton()"><u>u</u>pload</a> |</span>
    <a id="editchecker" href="javascript:switchEditMode()" class="readmode">...</a>
   </div>
 <?php if (!$legacyMode) { ?>
@@ -214,7 +259,7 @@ if ($legacyMode) {
 }
   ?></div>
   <div id='status'></div>
-  <!--<div id='changer'></div>-->
+  <iframe id="uploadiframe" src="<?=$baseURI;?>/<?=$page;?>?action=uploadform" />
  </body>
 </html>
 <?php
