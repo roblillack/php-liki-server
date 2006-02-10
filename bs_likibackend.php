@@ -90,17 +90,17 @@ class bsLikiBackend {
     return preg_replace('[\'\"\]\[\%\s]', '', $name);
   }
 
-  function assurePageExists($page) {
+  /*function assurePageExists($page) {
     $page = $this->cleanPageName($page);
-    @mysql_query('INSERT INTO ' . $this->table . "(name, timestamp, unchanged) VALUES ('$page', 0, 0)", $this->dbh);
-  }
+    mysql_query('INSERT INTO ' . $this->table . "(name, timestamp, unchanged) VALUES ('$page', 0, 0)", $this->dbh);
+  }*/
 
   function autoFree($page) {
-    $this->assurePageExists($page);
+    //$this->assurePageExists($page);
     $page = $this->cleanPageName($page);
     $timestamp = time();
-    mysql_query("UPDATE ".$this->table." SET unchanged=0, lockkey='' WHERE ".
-                "(unchanged>=10 OR timestamp<$timestamp-60) AND name LIKE '$page'", $this->dbh);
+    return mysql_query("UPDATE ".$this->table." SET unchanged=0, lockkey='' WHERE ".
+                       "(unchanged>=10 OR timestamp<$timestamp-60) AND name LIKE '$page'", $this->dbh);
   }
 
   function lockPage($page, $key) {
@@ -112,14 +112,16 @@ class bsLikiBackend {
     mysql_query($query, $this->dbh);
 
     if (mysql_affected_rows($this->dbh) != 1) {
-      return false;
+      // if updating failed, the page needs to be created (we being atomic here, so no select)
+      return mysql_query('INSERT INTO ' . $this->table . "(name, timestamp, lockkey) ".
+                         "VALUES ('$page', $timestamp, '$key')", $this->dbh);
     } else {
       return true;
     }
   }
 
   function freePage($page, $key) {
-    $this->assurePageExists($page);
+    //$this->assurePageExists($page);
     $page = $this->cleanPageName($page);
     $key = addslashes($key);
     $timestamp = time();
@@ -175,7 +177,10 @@ class bsLikiBackend {
   }
   
   function getPagesContaining($what) {
-    $res = mysql_query("SELECT name FROM ".$this->table." WHERE content like '%".addslashes($what)."%' ORDER BY name ASC");
+    $res = mysql_query("SELECT name FROM ".$this->table.
+                       " WHERE content like '%".addslashes($what)."%'".
+                       " OR name like '%".addslashes($what)."%'".
+                       " ORDER BY name ASC");
     if (!$res) {
       trigger_error("could not get page list");
       return false;
@@ -196,8 +201,10 @@ class bsLikiBackend {
       return false;
     }
     if (mysql_num_rows($res) != 1) {
-      trigger_error("no result, when asking for content of page $page");
-      return false;
+      // page does not exist
+      return array('name'      => $page,
+                   'content'   => '',
+                   'timestamp' => 1);
     }
     $r = mysql_fetch_assoc($res);
     mysql_free_result($res);

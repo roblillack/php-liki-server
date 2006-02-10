@@ -68,6 +68,10 @@ function getPage($page) {
     }
   } else {
     $p = $b->getPage($page);
+    if ($p === false) {
+      $p = array('content'   => "# Error loading page $page",
+                 'timestamp' => '1');
+    }
   }
 
   return $p;
