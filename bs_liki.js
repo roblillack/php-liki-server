@@ -122,7 +122,7 @@ function formatContent(input) {
   // one line paragraphs (i.e. section headings)
   input = input.replace(/(^|\n)([\#\*])\ ([^\n]+)/g, '$1\n$2 $3\n');
   // multiline paragraphs
-  input = input.replace(/(^|\n)([\-\+\"\;\|\!]\ ([^\n](\n\ [^\n]|[^\n])+))/g, '\n$1$2\n');
+  input = input.replace(/(^|\n)([\-\+\"\'\;\|\!]\ ([^\n](\n\ [^\n]|[^\n])+))/g, '\n$1$2\n');
   // lines
   input = input.replace(/(^|\n)---+\ *\n/g, '$1---\n\n');
   // now, split it up.
@@ -162,6 +162,9 @@ function formatContent(input) {
       case '"':
         input += "<blockquote>" + content + "</blockquote>\n";
         break;
+      case '\'':
+        input += "<blockquote class=\"comment\">" + content + "</blockquote>\n";
+        break;
       case ';':
         input += "<pre>" + content + "</pre>\n";
         break;
@@ -186,7 +189,7 @@ function formatContent(input) {
 }
 
 function getParagraphType(p) {
-  if (p.match(/^[\#\*\-\+\"\;\|\!] /)) return p.charAt(0);
+  if (p.match(/^[\#\*\-\+\"\'\;\|\!] /)) return p.charAt(0);
   else if (p.match(/^---+\s*$/)) return 'line';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(gif|jpg|jpeg|png)\s*$/)) return 'image';
   else return '';
@@ -194,7 +197,7 @@ function getParagraphType(p) {
 
 function cleanParagraph(p) {
   // clean the leading marker and/or spaces (for code)
-  return p.replace(/(^|\n)\ \ ([^\n]+)/g, '$1$2').replace(/^[\#\*\-\+\"\;\|\!] /, '');
+  return p.replace(/(^|\n)\ \ ([^\n]+)/g, '$1$2').replace(/^[\#\*\-\+\"\'\;\|\!] /, '');
 }
 
 function formatParagraph(p) {

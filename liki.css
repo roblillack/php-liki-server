@@ -329,6 +329,11 @@ th {
   padding: 15px;
 }
 
+#viewcontent blockquote.comment {
+  background-color: #dfd;
+  font-style: italic;
+}
+
 #viewcontent pre {
   font-family: monospace;
   background-color: #eef;
