@@ -66,6 +66,17 @@ function getPage($page) {
       $p = array('content' => '# Search',
                  'timestamp' => '1');
     }
+  } elseif (strtolower($page) == 'pictureindex') {
+    if (bs_request('q') != '') {
+      $index = "# picture index\n";
+      $list = $b->getPagesContaining(bs_url(true));
+      if ($list !== false) foreach ($list as $i) $index .= "- [[$i]]\n";
+      $p = array('content' => $index,
+                 'timestamp' => '1');
+    } else {
+      $p = array('content' => '# Search',
+                 'timestamp' => '1');
+    }
   } else {
     $p = $b->getPage($page);
     if ($p === false) {
@@ -158,7 +169,7 @@ if (bs_request('action') == 'uploadform') {
   exit;
 } elseif (bs_request('action') == 'requestlock') {
   $newkey = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time());
-  if (!$havespecialpage && $b->lockPage($page, $newkey)/*&& $_SERVER['REMOTE_ADDR'] == '195.158.172.112'*/) {
+  if (!$havespecialpage && $b->lockPage($page, $newkey) && $_SERVER['REMOTE_ADDR'] == '195.158.172.153') {
     //header("HTTP/1.1 204 lock acquired");
     header('Content-type: text/plain; charset=UTF-8');
     echo($newkey);
