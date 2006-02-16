@@ -169,7 +169,7 @@ if (bs_request('action') == 'uploadform') {
   exit;
 } elseif (bs_request('action') == 'requestlock') {
   $newkey = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time());
-  if (!$havespecialpage && $b->lockPage($page, $newkey) && $_SERVER['REMOTE_ADDR'] == '195.158.172.153') {
+  if (!$havespecialpage && $_SERVER['REMOTE_ADDR'] == '195.158.172.153' && $b->lockPage($page, $newkey)) {
     //header("HTTP/1.1 204 lock acquired");
     header('Content-type: text/plain; charset=UTF-8');
     echo($newkey);
