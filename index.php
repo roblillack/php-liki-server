@@ -14,7 +14,7 @@ if (strlen($key) != 32) {
   $key = false;
 }
 
-$specialpages = array('index', 'search', 'timeindex');
+$specialpages = array('index', 'search', 'timeindex', 'pictureindex');
 if (in_array(strtolower(bs_request('page', false)), $specialpages)) {
   $havespecialpage = true;
 } else {
