@@ -112,7 +112,7 @@ class bsLikiBackend {
     mysql_query($query, $this->dbh);
 
     if (mysql_affected_rows($this->dbh) != 1) {
-      // if updating failed, the page needs to be created (we being atomic here, so no select)
+      // if updating failed, the page needs to be created (were being atomic here, so no select)
       return mysql_query('INSERT INTO ' . $this->table . "(name, timestamp, lockkey) ".
                          "VALUES ('$page', $timestamp, '$key')", $this->dbh);
     } else {
@@ -177,6 +177,22 @@ class bsLikiBackend {
   }
   
   function getPagesContaining($what) {
+    $res = mysql_query("SELECT * FROM ".$this->table.
+                       " WHERE content like '%".addslashes($what)."%'".
+                       " OR name like '%".addslashes($what)."%'".
+                       " ORDER BY name ASC");
+    if (!$res) {
+      trigger_error("could not get page list");
+      return false;
+    }
+    $pages = array();
+    while ($r = mysql_fetch_assoc($res))
+      $pages[] = $r;
+    mysql_free_result($res);
+    return $pages;
+  }
+  
+  function getPageNamesContaining($what) {
     $res = mysql_query("SELECT name FROM ".$this->table.
                        " WHERE content like '%".addslashes($what)."%'".
                        " OR name like '%".addslashes($what)."%'".

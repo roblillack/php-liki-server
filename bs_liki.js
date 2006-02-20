@@ -191,7 +191,7 @@ function formatContent(input) {
 function getParagraphType(p) {
   if (p.match(/^[\#\*\-\+\"\'\;\|\!] /)) return p.charAt(0);
   else if (p.match(/^---+\s*$/)) return 'line';
-  else if (p.match(/^http\:\/\/[^\s\"\']+\.(gif|jpg|jpeg|png)\s*$/)) return 'image';
+  else if (p.match(/^http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\s*$/i)) return 'image';
   else return '';
 }
 

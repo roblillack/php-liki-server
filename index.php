@@ -42,7 +42,7 @@ function recentChangesHeader() {
 function getPage($page) {
   global $b;
   if (strtolower($page) == 'index') {
-    $index = "# Liki Pages sorted alphabetically\nswitch to [[TimeIndex]].\n";
+    $index = "# Liki Pages sorted alphabetically\nswitch to [TimeIndex] or [PictureIndex].\n";
     $list = $b->getPageList();
     foreach ($list as $i)
       $index .= "- [[$i]]\n";
@@ -58,7 +58,7 @@ function getPage($page) {
   } elseif (strtolower($page) == 'search') {
     if (bs_request('q') != '') {
       $index = "# Search for \"".htmlentities(bs_request('q', false))."\"\n";
-      $list = $b->getPagesContaining(bs_request('q', false));
+      $list = $b->getPageNamesContaining(bs_request('q', false));
       if ($list !== false) foreach ($list as $i) $index .= "- [[$i]]\n";
       $p = array('content' => $index,
                  'timestamp' => '1');
@@ -67,16 +67,39 @@ function getPage($page) {
                  'timestamp' => '1');
     }
   } elseif (strtolower($page) == 'pictureindex') {
-    if (bs_request('q') != '') {
-      $index = "# picture index\n";
-      $list = $b->getPagesContaining(bs_url(true));
-      if ($list !== false) foreach ($list as $i) $index .= "- [[$i]]\n";
-      $p = array('content' => $index,
-                 'timestamp' => '1');
-    } else {
-      $p = array('content' => '# Search',
-                 'timestamp' => '1');
+    $indexContent = "# Pages containung uploaded pictures\n".
+                    "switch to [Index normal index].\n";
+    $pagelist = $b->getPagesContaining(bs_url(true));
+    // alte bilder loeschen....
+    global $bs_classpath;
+    $picturedir = "$bs_classpath/../pix";
+    if (is_dir($picturedir)) {
+      $dirhandle = opendir($picturedir);
+      while ($filename = readdir($dirhandle)) {
+        if ($filename != "." && $filename != "..") {
+          if (is_file("$picturedir/$filename")) {
+            $indexContent .= "\n".bs_url(true)."/pix/$filename\n";
+            $pagesShowingThisPic = array();
+            foreach ($pagelist as $i) {
+              if (strpos($i['content'], $filename) !== false) {
+                 $pagesShowingThisPic[] = $i['name'];
+              }
+            }
+            if (count($pagesShowingThisPic) > 0) {
+              foreach ($pagesShowingThisPic as $k => $v)
+                $indexContent .= ($k == 0 ? "| " : ", ") . "[$v]";
+            } else {
+              $indexContent .= "| (can be deleted)";
+            }
+            $indexContent .= "\n----\n";
+          }
+        }
+      }
+      closedir($dirhandle);
     }
+    //if ($list !== false) foreach ($list as $i) $index .= "- [$i]\n";
+    $p = array('content' => $indexContent,
+               'timestamp' => '1');
   } else {
     $p = $b->getPage($page);
     if ($p === false) {
@@ -281,57 +304,4 @@ if ($legacyMode) {
 $b->closeConnection();
 exit;
 
-/*function enter_critical_section() {
-  global $sem;
-  $semkey = ftok(__FILE__, "1");
-  $sem = @sem_get($semkey, 1);
-  if ($sem === false) return false;
-  if (@sem_acquire($sem) === false) return false;
-  return true;
-}
-
-function leave_critical_section() {
-  global $sem;
-  if (@sem_release($sem) === false) return false;
-  return true;
-  //@sem_remove($sem);
-}
- 
-function liki_is_locked() {
-  global $filename;
-  $lockname = $filename.'.lock';
-  if (is_readable($lockname)) {
-    if (filemtime($lockname) + 60 > time()) {
-      $lockip = trim(implode('', file($lockfile)));
-      if ($lockip == $HTTP_SERVER_VARS['REMOTE_ADDR'])
-        return 2; // locked by user
-      else
-        return 1; // locked by someone else
-    } else {
-      unlink($lockname);
-    }
-  }
-  return 0;
-}
-
-function lock_liki() {
-  global $filename, $HTTP_SERVER_VARS;
-  $lockname = $filename.'.lock';
-  $handle = false;
-  $handle = fopen($lockname, 'w');
-  if ($handle) {
-    fputs($handle, $HTTP_SERVER_VARS['REMOTE_ADDR']);
-    fclose($handle);
-  } 
-  return true;
-}
-
-function free_liki() {
-  global $filename, $HTTP_SERVER_VARS;
-  $lockname = $filename.'.lock';
-  if (file_exists($lockname)) {
-    unlink($lockname);
-  }
-  return true;
-}*/
 ?>
