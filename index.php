@@ -78,20 +78,18 @@ function getPage($page) {
       while ($filename = readdir($dirhandle)) {
         if ($filename != "." && $filename != "..") {
           if (is_file("$picturedir/$filename")) {
-            $indexContent .= "\n".bs_url(true)."/pix/$filename\n";
             $pagesShowingThisPic = array();
             foreach ($pagelist as $i) {
               if (strpos($i['content'], $filename) !== false) {
                  $pagesShowingThisPic[] = $i['name'];
               }
             }
-            if (count($pagesShowingThisPic) > 0) {
+            if (count($pagesShowingThisPic) > 0 || bs_request('q') == 'deleted') {
+              $indexContent .= "\n".bs_url(true)."/pix/$filename\n";
               foreach ($pagesShowingThisPic as $k => $v)
                 $indexContent .= ($k == 0 ? "| " : ", ") . "[$v]";
-            } else {
-              $indexContent .= "| (can be deleted)";
+              $indexContent .= "\n----\n";
             }
-            $indexContent .= "\n----\n";
           }
         }
       }
