@@ -14,7 +14,7 @@ if (strlen($key) != 32) {
   $key = false;
 }
 
-$specialpages = array('index', 'search', 'timeindex', 'pictureindex');
+$specialpages = array('index', 'search', 'timeindex', 'pictureindex', 'deletedpictures');
 if (in_array(strtolower(bs_request('page', false)), $specialpages)) {
   $havespecialpage = true;
 } else {
@@ -66,7 +66,8 @@ function getPage($page) {
       $p = array('content' => '# Search',
                  'timestamp' => '1');
     }
-  } elseif (strtolower($page) == 'pictureindex') {
+  } elseif (strtolower($page) == 'pictureindex'
+            || strtolower($page) == 'deletedpictures') {
     $indexContent = "# Pages containung uploaded pictures\n".
                     "switch to [Index normal index].\n";
     $pagelist = $b->getPagesContaining(bs_url(true));
@@ -84,7 +85,10 @@ function getPage($page) {
                  $pagesShowingThisPic[] = $i['name'];
               }
             }
-            if (count($pagesShowingThisPic) > 0 || bs_request('q') == 'deleted') {
+            if ((count($pagesShowingThisPic) > 0
+                 && strtolower($page) == 'pictureindex')
+                || (count($pagesShowingThisPic) === 0
+                 && strtolower($page) == 'deletedpictures')) {
               $indexContent .= "\n".bs_url(true)."/pix/$filename\n";
               foreach ($pagesShowingThisPic as $k => $v)
                 $indexContent .= ($k == 0 ? "| " : ", ") . "[$v]";
