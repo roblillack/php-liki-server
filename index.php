@@ -277,7 +277,7 @@ echo XHTML_11_HEADER;
  <body id="mainbody" onLoad="initLiki(<?=$params?>)">
   <a accessKey="f" href="<?=(bs_baseurl().'/frontpage');?>" id="likititle">the <em>#burningsoda</em> liki</a>
   <div id="toolbar">
-   <span id="uploadbutton"><a accessKey="u" href="javascript:clickUploadButton()"><u>u</u>pload</a> |</span>
+   <span id="uploadbutton"><a accessKey="p" href="javascript:clickUploadButton()">insert <u>p</u>icture</a> |</span>
    <a id="editchecker" href="javascript:switchEditMode()" class="readmode">...</a>
   </div>
 <?php if (!$legacyMode) { ?>
