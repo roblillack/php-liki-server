@@ -124,6 +124,16 @@ function updateTimestamps(element, what) {
   element.innerHTML=c;
 }
 
+function toggleVisits() {
+  var eVisitBar = document.getElementById("visitbar");
+  if (eVisitBar.style.display == 'block') {
+    eVisitBar.style.display = 'none';
+  } else {
+    eVisitBar.style.display = 'block';
+  }
+}
+
+
 function formatContent(input) {
   /* make shure everything that tries to be a paragraph _really_
    * is delimited by at least one empty line. */

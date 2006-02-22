@@ -292,7 +292,10 @@ echo XHTML_11_HEADER;
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
 <?php } ?>
-  <div id="visitbar">recent visits: <span id="recentvisits"></span></div>
+  <div id="visitbar">
+   <a href="javascript:toggleVisits();" accessKey="v">recent <u>v</u>isits</a>:
+   <span id="recentvisits"></span>
+  </div>
   <div id="navibar">
    <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input accessKey="s" onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form>
    <a accessKey="i" href="<?=(bs_baseurl().'/INDEX');?>"><u>i</u>ndex</a>,
