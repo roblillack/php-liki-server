@@ -6,7 +6,7 @@ body {
   padding: 0;
 }
 
-#navibar {
+#navibar, #visitbar {
   text-align: left;
   position: relative;
   overflow: hidden;
@@ -18,18 +18,27 @@ body {
   font-family: sans-serif;
   font-size: 10px;
   border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #555;
   height: 14px;
   padding-left: 5px;
+  padding-right: 5px;
+}
+
+#visitbar {
+  border-bottom: 0;
+}
+
+#navibar {
+  border-top: 0;
   padding-right: 64px;
 }
 
-#navibar a {
+#navibar a, #visitbar a {
   color: white;
   text-decoration: none;
 }
 
-#navibar a:hover {
+#navibar a:hover, #visitbar a:hover {
   color: white;
   text-decoration: underline;
 }

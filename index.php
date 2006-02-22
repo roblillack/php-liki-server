@@ -37,6 +37,12 @@ function recentChangesHeader() {
     $str .= $p['name']."/".$p['howlongago'].",";
   }
   header('X-LIKI-RecentChanges: '.rawurlencode(substr($str,0,strlen($str)-1)));
+  
+  $str = "";
+  foreach ($b->getRecentVisits(10) as $p) {
+    $str .= $p['name']."/".$p['howlongago'].",";
+  }
+  header('X-LIKI-RecentVisits: '.rawurlencode(substr($str,0,strlen($str)-1)));
 }
 
 function getPage($page) {
@@ -160,6 +166,7 @@ if (bs_request('action') == 'uploadform') {
   //header('X-LIKI-RecentChanges: '.rawurlencode($b->getLastChanges(6)));
   recentChangesHeader();
   $p = getPage($page);
+  $b->visitPage($page);
   header('X-LIKI-Timestamp: '.$p['timestamp']);
   header('Content-type: text/html; charset=UTF-8');
   // this is just a fix for a safari bug.
@@ -285,6 +292,7 @@ echo XHTML_11_HEADER;
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
   </form>
 <?php } ?>
+  <div id="visitbar">recent visits: <span id="recentvisits"></span></div>
   <div id="navibar">
    <form id="searchform" action="<?=$baseURI;?>/search" method="get"><input accessKey="s" onClick="clearSearchField();" id="searchfield" type="text" value=<?=$searchfield?> name="q" /></form>
    <a accessKey="i" href="<?=(bs_baseurl().'/INDEX');?>"><u>i</u>ndex</a>,

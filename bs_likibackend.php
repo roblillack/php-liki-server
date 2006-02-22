@@ -134,17 +134,17 @@ class bsLikiBackend {
     }
   }
 
-  function getRecentChanges($count = 10) {
+  function getRecentChanges($count = 10, $column = 'timestamp') {
     $changes = "";
     $timestamp = time();
-    $q = "SELECT name,timestamp FROM ".$this->table." ORDER BY timestamp DESC";
+    $q = "SELECT name,$column FROM ".$this->table." ORDER BY $column DESC";
     if ($count !== false)
       $q .= " LIMIT $count";
     $res = mysql_query($q);
     if (!$res) return false;
     $list = array();
     while ($r = mysql_fetch_assoc($res)) {
-      $seconds = $timestamp - $r['timestamp'];
+      $seconds = $timestamp - $r[$column];
       $minutes = floor($seconds / 60); $seconds %= 60;
       $hours = floor($minutes / 60); $minutes %= 60;
       $days = floor($hours / 24); $hours %= 24;
@@ -161,6 +161,10 @@ class bsLikiBackend {
     }
     mysql_free_result($res);
     return $list;
+  }
+  
+  function getRecentVisits($count = 10) {
+    return $this->getRecentChanges($count, 'timestamp_visit');
   }
 
   function getPageList() {
@@ -207,7 +211,20 @@ class bsLikiBackend {
     mysql_free_result($res);
     return $pages;
   }
-   
+  
+  function visitPage($page) {
+    $timestamp = time();
+    $page = $this->cleanPageName($page);
+    $query = 'UPDATE '.$this->table." SET timestamp_visit=$timestamp WHERE name LIKE '$page'";
+    mysql_query($query, $this->dbh);
+
+    if (mysql_affected_rows($this->dbh) != 1) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
   function getPage($page) {
     $this->autoFree($page);
     $page = $this->cleanPageName($page);

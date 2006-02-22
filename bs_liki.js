@@ -25,6 +25,7 @@ var eEditContent;
 var eEditForm;
 var eStatusLine;
 var eRecentChanges;
+var eRecentVisits;
 var eUploadIFrame;
 
 var lastContentEvent;
@@ -102,8 +103,15 @@ function fileDropped() {
   //alert('dateiname: '+uploadForm.elements['filedroptarget'].value);
 }*/
 
-function setRecentChanges(what) {
-  if (!what) return;
+function updateFromHeaderData(req) {
+  try {
+    updateTimestamps(eRecentChanges, req.getResponseHeader('X-LIKI-RecentChanges'));
+    updateTimestamps(eRecentVisits, req.getResponseHeader('X-LIKI-RecentVisits'));
+  } catch(e) { }
+}
+
+function updateTimestamps(element, what) {
+  if (!element || !what) return;
   what = decodeURIComponent(what);
   var c = "";
   var changes = what.split(",");
@@ -113,7 +121,7 @@ function setRecentChanges(what) {
     var data = changes[i].split("/");
     c += " <a href=\""+baseURI+"/"+data[0]+"\">"+data[0]+"</a> <span class=\"time\">"+data[1]+"</span>";
   }
-  eRecentChanges.innerHTML=c;
+  element.innerHTML=c;
 }
 
 function formatContent(input) {
@@ -423,7 +431,7 @@ function createTimestampHandler(req) {
     if (req.readyState == 4 &&
         req.status == 200) {
       // update the recently changes pages regardless of the timestamp:
-      try { setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges')); } catch(e) {}
+      try { updateFromHeaderData(req); } catch(e) {}
       // so, time to update?
       if (req.responseText > lastTimestamp) {
         setStatus("Loading changes...");
@@ -452,7 +460,7 @@ function createLoadHandler(req/*, ts*/) {
       if (editMode == false) {
         if (req.status == 200) {
           // update the recently changes pages:
-          try { setRecentChanges(req.getResponseHeader('X-LIKI-RecentChanges')); } catch(e) {}
+          updateFromHeaderData(req);
           //var text = extractContent(req.responseXML);
           var text = req.responseText;
           // KHTML BUG:
@@ -494,6 +502,7 @@ function initLiki(u, t, readonly, query) {
   eEditContent = document.getElementById('content');
   eStatusLine = document.getElementById('status');
   eRecentChanges = document.getElementById('recentchanges');
+  eRecentVisits = document.getElementById('recentvisits');
   eUploadIFrame = document.getElementById('uploadiframe');
   
   setEditMode(false);
