@@ -55,9 +55,9 @@ function uploadSuccess(picurl) {
   var contentBefore = eEditContent.value.substring(0, cursorpos);
   var contentAfter = eEditContent.value.substring(cursorpos);
   //alert('picurl: ' + picurl + '\ncursorpos: ' +cursorpos);
-  eEditContent.value = contentBefore + picurl + contentAfter;
-  eEditContent.selectionStart = cursorpos + picurl.length;
-  eEditContent.selectionEnd = cursorpos + picurl.length;
+  eEditContent.value = contentBefore + '\n' + picurl + '\n' + contentAfter;
+  eEditContent.selectionStart = cursorpos + picurl.length + 1;
+  eEditContent.selectionEnd = cursorpos + picurl.length + 1;
   eEditContent.focus();
 }
 
@@ -150,14 +150,10 @@ function formatContent(input) {
   for (var i = 0; i < p.length; i++) {
     var type = getParagraphType(p[i]);
     var content = cleanParagraph(p[i]);
-    // dont format raw HTML
-    if (type != '!' && type != 'image' && type != 'line') {
-      content = formatParagraph(content);
-    }
     switch (type) {
       case '':
         // normal text paragraphs
-        input += "<p>" + content + "</p>\n";
+        input += "<p>" + formatParagraph(content) + "</p>\n";
         break;
       case '-': case '+':
         // lists
@@ -165,29 +161,30 @@ function formatContent(input) {
           if (type == '-') input += "<ul>\n";
           else input += "<ol>\n";
         }
-        input += " <li>" + content + "</li>\n";
+        input += " <li>" + formatParagraph(content) + "</li>\n";
         if (i == p.length - 1 || getParagraphType(p[i+1]) != type) {
           if (type == '-') input += "</ul>\n";
           else input += "</ol>\n";
         }
         break;
       case '#':
-        input += "\n\n<h1>" + content + "</h1>\n";
+        input += "\n\n<h1>" + formatParagraph(content) + "</h1>\n";
         break;
       case '*':
-        input += "\n\n<h2>" + content + "</h2>\n";
+        input += "\n\n<h2>" + formatParagraph(content) + "</h2>\n";
         break;
       case '"':
-        input += "<blockquote>" + content + "</blockquote>\n";
+        input += "<blockquote>" + formatParagraph(content) + "</blockquote>\n";
         break;
       case '\'':
-        input += "<blockquote class=\"comment\">" + content + "</blockquote>\n";
+        input += "<blockquote class=\"comment\">"
+                 + formatParagraph(content) + "</blockquote>\n";
         break;
       case ';':
-        input += "<pre>" + content + "</pre>\n";
+        input += "<pre>" + formatXMLchars(content) + "</pre>\n";
         break;
       case '|':
-        input += '<p style="text-align: center;">' + content + '</p>\n';
+        input += '<p style="text-align: center;">' + formatParagraph(content) + '</p>\n';
         break;
       case 'image':
         input += '<img src="' + content + '" alt="" class="centerpic" />\n';
@@ -218,11 +215,16 @@ function cleanParagraph(p) {
   return p.replace(/(^|\n)\ \ ([^\n]+)/g, '$1$2').replace(/^[\#\*\-\+\"\'\;\|\!] /, '');
 }
 
-function formatParagraph(p) {
+function formatXMLchars(input) {
   // xml special characters
-  p = p.replace(/&/g, '&amp;');
-  p = p.replace(/</g, '&lt;');
-  p = p.replace(/>/g, '&gt;');
+  input = input.replace(/&/g, '&amp;');
+  input = input.replace(/</g, '&lt;');
+  input = input.replace(/>/g, '&gt;');
+  return input;
+}
+
+function formatParagraph(p) {
+  p = formatXMLchars(p);
   // some symbols
   p = p.replace(/(^|[^-])--(?=([^-]|$))/g, '$1&ndash;');
   p = p.replace(/(^|[^-])---(?=([^-]|$))/g, '$1&mdash;');
