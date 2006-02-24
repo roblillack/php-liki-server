@@ -181,7 +181,7 @@ function formatContent(input) {
                  + formatParagraph(content) + "</blockquote>\n";
         break;
       case ';':
-        input += "<pre>" + formatXMLchars(content) + "</pre>\n";
+        input += "<pre>" + formatCodeParagraph(content) + "</pre>\n";
         break;
       case '|':
         input += '<p style="text-align: center;">' + formatParagraph(content) + '</p>\n';
@@ -221,6 +221,12 @@ function formatXMLchars(input) {
   input = input.replace(/</g, '&lt;');
   input = input.replace(/>/g, '&gt;');
   return input;
+}
+
+function formatCodeParagraph(c) {
+  c = formatXMLchars(c);
+  c = c.replace(/^~$/gm, '');
+  return c;
 }
 
 function formatParagraph(p) {
