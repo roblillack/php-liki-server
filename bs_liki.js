@@ -229,6 +229,13 @@ function formatCodeParagraph(c) {
   return c;
 }
 
+/*function formatSpan(p) {
+  var spanTypes = new Array(
+    // startchar, endchar, regexp, replace
+    new Array(
+      /([\w]+|#[0-9a-f]{3}([0-9a-f]{3})?)/
+...later */
+
 function formatParagraph(p) {
   p = formatXMLchars(p);
   // some symbols
@@ -249,6 +256,9 @@ function formatParagraph(p) {
   // liki-seiten (mit text)
   p = p.replace(/(^|[^\\])\[\[?([^\'\"\]\[\%\s\/\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/g,
                 '$1<a class="internal" href="' + baseURI + '/$2">$3</a>');
+  // colors
+  p = p.replace(/\{(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow|#[0-9a-f]{3}([0-9a-f]{3})?)\ (.*?[^\\])\}/gi,
+                '<span style="color:$1;">$3</span>');
   // forced line breaks
   p = p.replace(/\ \/\/\ *[\r\n]/g, "<br />");
   // escaping
