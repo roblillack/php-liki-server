@@ -79,7 +79,7 @@ function uploadSuccess(picurl) {
         eEditContent.value = pageContent;
         eEditContent.selectionStart = beginPos;
         eEditContent.selectionEnd = beginPos;
-        //eEditContent.focus();
+        eEditContent.focus();
         //pageContent = eEditContent.value;
         //alert('SOMETHING HAS BEEN DROPPED: '+filename);
         eIFrame.getElementById('uploadform').elements['picfile'].setAttribute('value', filename);
@@ -522,8 +522,7 @@ function createLoadHandler(req/*, ts*/) {
           // TODO: scrollpos.
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
-          //setStatus("scroll: " + scroll1 + " / " + scroll2);
-          eEditButton.focus();
+          /*setStatus("scroll: " + scroll1 + " / " + scroll2);*/
         }
       }
       transmitting = false;
@@ -565,6 +564,8 @@ function initLiki(u, t, readonly, query) {
     eEditButton.style.display = 'none';
   }
   //dumpVars();
+  // search-as-you-type doesn't work in konqueror without this one:
+  eEditButton.focus();
   interval = setInterval('transmitChanges()', timeout);
 }
 
