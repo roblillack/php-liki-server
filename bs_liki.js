@@ -106,13 +106,22 @@ function fileDropped() {
 function updateFromHeaderData(req) {
   try {
     updateTimestamps(eRecentChanges, req.getResponseHeader('X-LIKI-RecentChanges'));
+  } catch(e) {}
+  try {
     updateTimestamps(eRecentVisits, req.getResponseHeader('X-LIKI-RecentVisits'));
-  } catch(e) { }
+  } catch(e) {}
 }
 
 function updateTimestamps(element, what) {
-  if (!element || !what) return;
-  what = decodeURIComponent(what);
+  if (!what) return;
+  try {
+    what = decodeURIComponent(what);
+  } catch(e) {
+    if (e.name == "URIError") {
+      setStatus('Malformed timestamp list received.');
+    }
+    return;
+  }
   var c = "";
   var changes = what.split(",");
   //var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
@@ -459,7 +468,7 @@ function createTimestampHandler(req) {
     if (req.readyState == 4 &&
         req.status == 200) {
       // update the recently changes pages regardless of the timestamp:
-      try { updateFromHeaderData(req); } catch(e) {}
+      updateFromHeaderData(req);
       // so, time to update?
       if (req.responseText > lastTimestamp) {
         setStatus("Loading changes...");
@@ -482,6 +491,18 @@ function createTimestampHandler(req) {
   }
 }
 
+function getPageScroll() {
+  var yScroll;
+  if (self.pageYOffset) {
+    yScroll = self.pageYOffset;
+  } else if (document.documentElement && document.documentElement.scrollTop) { // Explorer 6 Strict
+    yScroll = document.documentElement.scrollTop;
+  } else if (document.body) {  // all other Explorers
+    yScroll = document.body.scrollTop;
+  }
+  return yScroll;
+}
+
 function createLoadHandler(req/*, ts*/) {
   return function() {
     if (req.readyState == 4) {
@@ -495,9 +516,13 @@ function createLoadHandler(req/*, ts*/) {
           pageContent = text.slice(text.indexOf("\n") + 1);
           eEditContent.value = pageContent;
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
+          var scroll1 = getPageScroll();
           eViewContent.innerHTML = formatContent(pageContent);
+          //var scroll2 = getPageScroll();
+          // TODO: scrollpos.
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
+          //setStatus("scroll: " + scroll1 + " / " + scroll2);
           eEditButton.focus();
         }
       }
