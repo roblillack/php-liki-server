@@ -473,15 +473,13 @@ function createTimestampHandler(req) {
       if (req.responseText > lastTimestamp) {
         setStatus("Loading changes...");
         var r = createRequest();
-        r.onreadystatechange = createLoadHandler(r/*, req.responseText*/);
-        //r.open("GET", mainURI+"?action=plainload", true);
+        r.onreadystatechange = createLoadHandler(r);
         var qstr = "";
         if (pageQuery != false) {
           // TODO: URI decoding, etc.
           qstr = "&q=" + pageQuery;
         }
-        r.open("GET", mainURI+"?action=htmlload" + qstr, true);
-        //r.open("GET", mainURI+"?action=load", true);
+        r.open("GET", mainURI+"?action=load" + qstr, true);
         r.send("");
         return;
       }
@@ -531,7 +529,7 @@ function createLoadHandler(req/*, ts*/) {
 }
  
 function setStatus(text) {
-  eStatusLine.innerHTML = text;
+  eStatusLine.innerHTML = "key: "+lockKey+"  "+text;
 }
 
 function initLiki(u, t, readonly, query) {
@@ -600,7 +598,7 @@ function transmitChanges() {
         // TODO: URI decoding, etc.
         qstr = "&q=" + pageQuery;
       }
-      req.open("GET", mainURI+"?action=htmlload" + qstr, true);
+      req.open("GET", mainURI+"?action=load" + qstr, true);
       req.send("");
     } else {
       setStatus("Checking for changes....");
