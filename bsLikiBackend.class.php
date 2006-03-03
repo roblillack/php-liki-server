@@ -247,7 +247,6 @@ class bsLikiBackend {
   function updatePage($page, $key, $content) {
     $key = addslashes($key);
     $page = $this->cleanPageName($page);
-    $content = addslashes($content);
     $this->autoFree($page);
     $p = $this->getPage($page);
     if ($p === false) return false;
@@ -257,6 +256,7 @@ class bsLikiBackend {
       $time = time();
       $timestamp = "timestamp_lock=$time, timestamp_change=$time, ";
     }
+    $content = addslashes($content);
     $query = 'UPDATE '.$this->db_table." SET ${timestamp}content='$content' ".
              "WHERE name LIKE '$page' AND (lockkey='$key')";
     mysql_query($query, $this->dbh);
