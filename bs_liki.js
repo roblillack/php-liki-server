@@ -276,59 +276,6 @@ function formatParagraph(p) {
   return p;
 }
 
-function oldformatContent(input) {
-  var preamble = ""
-  input = preamble+input;
-  var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
-  // linie
-  input = input.replace(/[\r\n]\ *\-{3,}\ *[\r\n]/g, '<bs:p><hr/></bs:p>');
-  // sonderzeichen
-  input = input.replace(/([^-]|[\r\n])--([^-]|[\r\n])/g, '$1&ndash;$2');
-  input = input.replace(/([^-]|[\r\n])---([^-]|[\r\n])/g, '$1&mdash;$2');
-  // _hervorgehoben_, *fett*, -durchgestrichen-
-  input = input.replace(/([\s\W])_([\S][\S\ ]*?[\S])_([\s\W])/g, '$1<em>$2</em>$3');
-  input = input.replace(/([\s\W])\*([\S][\S\ ]*?[\S])\*([\s\W])/g, '$1<strong>$2</strong>$3');
-  input = input.replace(/([\s\W])-([\S][\S\ ]*?[\S])-([\s\W])/g, '$1<s>$2</s>$3');
-  // bilder
-  input = input.replace(/^\s*(http\:\/\/[^\s\"\']+\.(gif|jpg|jpeg|png))\s*$/gm,
-                        "<bs:p><a href=\"$1\"><img class=\"centerpic\" src=\"$1\" alt=\"\" /></a></bs:p>");
-  // externe links
-  input = input.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)([\s]|$)/g, '$1<a class="external" href="$2">$2</a>$3');
-  // externe links (mit text)
-  input = input.replace(/\[(http\:\/\/[^\s\"\']+)\]/g, '<a class="external" href="$1">$2</a>');
-  input = input.replace(/\[(http\:\/\/[^\s\"\']+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
-  // liki-seiten
-  input = input.replace(/\[\[?([^\'\"\]\[\%\s\/\\]+)\]?\]/g, '<a class="internal" href="'+baseURI+'/$1">$1</a>');
-  // liki-seiten (mit text)
-  input = input.replace(/(^|[^\\])\[\[?([^\'\"\]\[\%\s\/\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/g, '$1<a class="internal" href="'+baseURI+'/$2">$3</a>');
-  // listen
-  input = input.replace(/^\-\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, "<bs:p><ul><li>$1</li></ul></bs:p>");
-  //input = input.replace(/<bs:li>
-  // header
-  input = input.replace(/^\#\ +([^\n]+)$/gm, '<bs:p><h1>$1</h1></bs:p>');
-  input = input.replace(/^\*\ +([^\n]+)$/gm, '<bs:p><h1>$1</h1></bs:p>');
-  // blockquotes
-  input = input.replace(/^\"\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><blockquote>$1</blockquote></bs:p>');
-  // code
-  input = input.replace(/^\;\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:code><pre>$1</pre></bs:code>');
-  //input = replaceBetween(input, '<bs:code>', '</bs:code>', /\n\ +/g, '\n');
-  //input = input.replace(/<bs:code>(.*\n)\s+([^\s]*)</bs:code>/g, '<bs:p>$
-  // center
-  input = input.replace(/^\|\ +([^\n](\n\ +[^\s]|[^\n])+)$/gm, '<bs:p><p style=\"text-align:center\">$1</p></bs:p>');
-  // damit sind KEINE breaks mehr nach paragraphen vorhanden:
-  input = input.replace(/<\/bs\:p>\s*/g, "\n");
-  input = input.replace(/\s*<bs\:p>/g, "\n");
-  // forcierte breaks
-  input = input.replace(/\ \/\/\ *[\r\n]/g, "<br />");
-
-  // escapes
-  input = input.replace(/\\(.)/g, '$1');
-  //input = input.replace(/\\\\/g, '\\');
-  // absaetze
-  input = input.replace(/\n\s*\n/g, "<br /><br />\n");
-  return input;
-}
-
 function setEditMode(onoff) {
   var body = document.getElementById("mainbody");
 
