@@ -37,11 +37,6 @@ body {
   padding-top: 0;
 }
 
-#navibar {
-  padding-right: 64px;
-  /* ^^ doesn't work :( */
-}
-
 #navibar a, #visitbar a {
   color: white;
   text-decoration: none;
@@ -244,6 +239,8 @@ a#likititle:hover:after {
   
 #status {
   position: fixed;
+  margin: 0;
+  border: 0;
   width: 100%;
   height: 12px;
   background-color: #ddd;

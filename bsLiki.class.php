@@ -252,7 +252,7 @@ class bsLiki {
       if ($this->specialPage) {
         $t = time();
       } else {
-        $t = $this->getTimestamp();
+        $t = $this->backend->getTimestamp($this->activePage);
         if ($t === false) {
           $t = 1;
         }
