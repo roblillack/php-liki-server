@@ -67,6 +67,26 @@ class bsLiki {
     header('X-LIKI-RecentVisits: '.rawurlencode(substr($str,0,strlen($str)-1)));
   }
 
+  function isLegitPageName($str) {
+    $followers = 0;
+    for ($i = 0; $i < strlen($str); $i++) {
+      $value = ord($str[$i]);
+      // check for valid utf-8
+      if ($value >= 240) {
+        if ($followers > 0) return false; else $followers = 3;
+      } elseif ($value >= 224) {
+        if ($followers > 0) return false; else $followers = 2;
+      } elseif ($value >= 192) {
+        if ($followers > 0) return false; else $followers = 1;
+      } elseif ($value >= 128) {
+        if ($followers < 1) return false; else $followers--;
+      } elseif ($value < 33 || strstr("\"'[]%", chr($value)))
+        // control/unwanted characters
+        return false;
+    }
+    return true;
+  }
+
   function createIndexPage() {
     $index = "# Liki Pages sorted alphabetically\n".
              "switch to [TimeIndex] or [PictureIndex].\n";
@@ -209,8 +229,7 @@ class bsLiki {
     }
 
     $this->activePage = $this->getRequest('page', false);
-    /** @todo: check for legit utf-8 */
-    if ($this->activePage == "") {
+    if (!$this->isLegitPageName($this->activePage) || $this->activePage == "") {
       header('Location: '.$this->baseUrl.'/frontpage');
       $this->quit();
     };
