@@ -132,22 +132,22 @@ class bsLiki {
   function getPage($page) {
     if (strtolower($page) == 'index') {
       $p = array('content' => $this->createIndexPage(),
-                 'timestamp_changed' => time());
+                 'timestamp_change' => time());
     } elseif (strtolower($page) == 'timeindex') {
       $p = array('content' => $this->createTimeIndexPage(),
-                 'timestamp_changed' => time());
+                 'timestamp_change' => time());
     } elseif (strtolower($page) == 'search') {
        $p = array('content' => $this->createSearchPage($this->getRequest("q", false)),
-                  'timestamp_changed' => time());
+                  'timestamp_change' => time());
     } elseif (strtolower($page) == 'pictureindex') {
-       $p = array('content' => $this->createPictureIndex(),'timestamp_changed' => time());
+       $p = array('content' => $this->createPictureIndex(),'timestamp_change' => time());
     } elseif (strtolower($page) == 'deletedpictures') {
-      $p = array('content' => $this->createPictureIndex(true), 'timestamp_changed' => time());
+      $p = array('content' => $this->createPictureIndex(true), 'timestamp_change' => time());
     } else {
       $p = $this->backend->getPage($page);
       if ($p === false) {
         $p = array('content'   => "# Error loading page $page",
-                   'timestamp_changed' => '1');
+                   'timestamp_change' => '1');
       }
     }
 
