@@ -8,17 +8,22 @@ body {
 
 #navibar, #visitbar {
   text-align: left;
+  display: block;
   position: relative;
+  white-space: nowrap;
   overflow: hidden;
   margin: 0;
   background-color: #999;
   color: #ddd;
-  border: 0;
   font-family: sans-serif;
   font-size: 10px;
+  border: 0;
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #555;
   height: 14px;
+  line-height: 14px;
+  padding-top: 1px;
+  padding-bottom: 1px;
   padding-left: 5px;
   padding-right: 5px;
 }
@@ -29,12 +34,12 @@ body {
   font-size: 9px;
   text-align: right;
   border-bottom: 0;
+  padding-top: 0;
 }
 
 #navibar {
-  /*border-top: 0;*/
   padding-right: 64px;
-  padding-bottom: 1px;
+  /* ^^ doesn't work :( */
 }
 
 #navibar a, #visitbar a {
@@ -49,6 +54,39 @@ body {
 
 #recentchanges span, #recentvisits span {
   font-size: 8px;
+}
+
+#searchform, #searchfield {
+  display: inline;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  font-size: 9px;
+  line-height: 9px;
+  height: 14px;
+  width: 60px;
+  color: black;
+}
+
+#searchform {
+  width: 64px;
+  height: 64px;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  background-color: #999;
+}
+
+#searchfield {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  height: 12px;
+  width: 60px;
+  background-color: #ccc;
+}
+#searchfield:hover, #searchfield:focus {
+  background-color: #ffc;
 }
 
 a#likititle {
@@ -220,29 +258,6 @@ a#likititle:hover:after {
   border-bottom: 1px solid #999;
 }
 
-#searchform, #searchfield {
-  display: inline;
-  margin: 0;
-  border: 0;
-  padding: 0;
-  font-size: 9px;
-  line-height: 9px;
-  /*height: 14px;*/
-  width: 60px;
-  color: black;
-}
-
-#searchfield {
-  position:absolute;
-  top: 2px;
-  right: 2px;
-  height: 12px;
-  width: 60px;
-  background-color: #ccc;
-}
-#searchfield:hover, #searchfield:focus {
-  background-color: #ffc;
-}
 
 #content, #viewcontent {
   text-align: left;

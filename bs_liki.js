@@ -529,7 +529,7 @@ function createLoadHandler(req/*, ts*/) {
 }
  
 function setStatus(text) {
-  eStatusLine.innerHTML = "key: "+lockKey+"  "+text;
+  eStatusLine.innerHTML = text;
 }
 
 function initLiki(u, t, readonly, query) {

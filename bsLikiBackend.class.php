@@ -12,25 +12,27 @@ class bsLikiBackend {
     
     if ($handle_ === false) {
       require("config.php");
-      $this->dbh = mysql_connect($this->db_host, $this->db_user, $this->db_password);
-	    mysql_select_db($this->db_database);
+      $this->dbh = mysql_connect($this->db_host,
+                                 $this->db_user,
+                                 $this->db_password);
+      if ($this->dbh === false)
+        die('no connection to database possible');
+      if (mysql_select_db($this->db_database, $this->dbh) === false)
+        die('could not select database '.$this->db_database);
     } else {
       $this->dbh = $handle_;
     }
 
-    if (!$this->dbh) {
-      die('no db-connection.');
-    }
-
     if (!$this->tablePresent()) {
-      $this->createTable() or die('no table.');
+      trigger_error('creating table: '.$this->db_table);
+      $this->createTable() or die('could not create table '.$this->db_table);
     }
   }
 
   function tablePresent() {
     $res = mysql_query('DESC '.$this->db_table, $this->dbh);
     if ($res) {
-      if (mysql_num_rows($res) >= 5) {
+      if (mysql_num_rows($res) >= 6) {
         $cols = array();
         for ($i = 0; $i < mysql_num_rows($res); $i ++) {
           $row = mysql_fetch_array($res);
@@ -38,53 +40,42 @@ class bsLikiBackend {
         }
         mysql_free_result($res);
         foreach(array('name', 'content', 'lockkey',
-                      'timestamp_change', 'timestamp_lock', 'timestamp_visit') as $col) {
-          if (!in_array($col, $cols)) {
-            trigger_error("column $col missing");
-            return false;
-          }
+                      'timestamp_change', 'timestamp_lock',
+                      'timestamp_visit') as $col) {
+          if (!in_array($col, $cols)) die("column $col missing");
         }
-        return true;
       } else {
-        trigger_error('not enough columns');
-        return false;
+        die('not enough columns. table layout changed?');
       }
     } else {
-      trigger_error("table ".$this->db_table." not present.");
+      return false;
     }
+    return true;
   }
 
   function createTable() {
-    trigger_error("FIXME: unable to create table ATM.");
-    return false;
+    $query = "CREATE TABLE `".$this->db_table."` (".
+             " name             varchar(100)     NOT NULL default '',".
+             " content          text             default NULL,".
+             " lockkey          varchar(32)      default NULL,".
+             " timestamp_visit  int(10) unsigned NOT NULL default 0,".
+             " timestamp_change int(10) unsigned NOT NULL default 0,".
+             " timestamp_lock   int(10) unsigned NOT NULL default 0,".
+             " PRIMARY KEY(name)".
+             ")";
+    return mysql_query($query, $this->dbh);
   }
-
-  /*function pageExists($page) {
-    $page = addslashes($page);
-    $res = mysql_query('SELECT name FROM '.$this->db_table." WHERE name='$page'");
-    if ($res && mysql_num_rows($res) == 1) {
-      mysql_free_result($res);
-      return true;
-    } else {
-      @mysql_free_result($res);
-      return false;
-    }
-  }*/
 
   function cleanPageName($name) {
     return preg_replace('[\'\"\]\[\%\s]', '', $name);
   }
 
-  /*function assurePageExists($page) {
-    $page = $this->cleanPageName($page);
-    mysql_query('INSERT INTO ' . $this->db_table . "(name, timestamp, unchanged) VALUES ('$page', 0, 0)", $this->dbh);
-  }*/
-
   function autoFree($page) {
     $page = $this->cleanPageName($page);
     $timestamp = time();
-    return mysql_query("UPDATE ".$this->db_table." SET lockkey='' WHERE ".
-                       "(timestamp_lock<$timestamp-60) AND name LIKE '$page'", $this->dbh);
+    return mysql_query("UPDATE `".$this->db_table."` SET lockkey='' WHERE ".
+                       "(timestamp_lock < $timestamp - 60) AND ".
+                       "name LIKE '$page'", $this->dbh);
   }
 
   function lockPage($page, $key) {
@@ -92,12 +83,16 @@ class bsLikiBackend {
     $timestamp = time();
     $key = addslashes($key);
     $page = $this->cleanPageName($page);
-    $query = 'UPDATE '.$this->db_table." SET lockkey='$key',timestamp_lock=$timestamp WHERE name LIKE '$page' AND lockkey=''";
+    $query = 'UPDATE `'.$this->db_table."` SET lockkey='$key',".
+             "timestamp_lock=$timestamp WHERE name LIKE '$page' AND ".
+             "lockkey=''";
     mysql_query($query, $this->dbh);
 
     if (mysql_affected_rows($this->dbh) != 1) {
-      // if updating failed, the page needs to be created (were being atomic here, so no select)
-      return mysql_query('INSERT INTO ' . $this->db_table . "(name, timestamp_lock, lockkey) ".
+      /** if updating failed, the page needs to be created
+          (were being atomic here, so no select) */
+      return mysql_query('INSERT INTO `'.$this->db_table."`".
+                         "(name, timestamp_lock, lockkey) ".
                          "VALUES ('$page', $timestamp, '$key')", $this->dbh);
     } else {
       return true;
@@ -108,7 +103,7 @@ class bsLikiBackend {
     $page = $this->cleanPageName($page);
     $key = addslashes($key);
     $timestamp = time();
-    mysql_query("UPDATE ".$this->db_table." SET lockkey='' WHERE ".
+    mysql_query("UPDATE `".$this->db_table."` SET lockkey='' WHERE ".
                 "lockkey='$key' AND name LIKE '$page'", $this->dbh);
     if (mysql_affected_rows($this->dbh) != 1) {
       return false;
@@ -120,7 +115,8 @@ class bsLikiBackend {
   function getRecentChanges($count = 10, $column = 'timestamp_change') {
     $changes = "";
     $timestamp = time();
-    $q = "SELECT name,$column FROM ".$this->db_table." ORDER BY $column DESC";
+    $q = "SELECT name,$column FROM `".$this->db_table."` ".
+         "ORDER BY $column DESC";
     if ($count !== false)
       $q .= " LIMIT $count";
     $res = mysql_query($q);
@@ -151,7 +147,8 @@ class bsLikiBackend {
   }
 
   function getPageList() {
-    $res = mysql_query("SELECT name FROM ".$this->db_table." ORDER BY name ASC");
+    $res = mysql_query("SELECT name FROM `".$this->db_table."` ".
+                       "ORDER BY name ASC");
     if (!$res) {
       trigger_error("could not get page list");
       return false;
@@ -164,10 +161,10 @@ class bsLikiBackend {
   }
   
   function getPagesContaining($what) {
-    $res = mysql_query("SELECT * FROM ".$this->db_table.
-                       " WHERE content like '%".addslashes($what)."%'".
-                       " OR name like '%".addslashes($what)."%'".
-                       " ORDER BY name ASC");
+    $res = mysql_query("SELECT * FROM `".$this->db_table."` ".
+                       "WHERE content like '%".addslashes($what)."%'".
+                       "OR name like '%".addslashes($what)."%'".
+                       "ORDER BY name ASC");
     if (!$res) {
       trigger_error("could not get page list");
       return false;
@@ -180,10 +177,10 @@ class bsLikiBackend {
   }
   
   function getPageNamesContaining($what) {
-    $res = mysql_query("SELECT name FROM ".$this->db_table.
-                       " WHERE content like '%".addslashes($what)."%'".
-                       " OR name like '%".addslashes($what)."%'".
-                       " ORDER BY name ASC");
+    $res = mysql_query("SELECT name FROM `".$this->db_table."` ".
+                       "WHERE content like '%".addslashes($what)."%' ".
+                       "OR name like '%".addslashes($what)."%' ".
+                       "ORDER BY name ASC");
     if (!$res) {
       die("could not get page list: ".mysql_error());
       return false;
@@ -198,7 +195,8 @@ class bsLikiBackend {
   function visitPage($page) {
     $timestamp = time();
     $page = $this->cleanPageName($page);
-    $query = 'UPDATE '.$this->db_table." SET timestamp_visit=$timestamp WHERE name LIKE '$page'";
+    $query = 'UPDATE `'.$this->db_table."` SET timestamp_visit=$timestamp ".
+             "WHERE name LIKE '$page'";
     mysql_query($query, $this->dbh);
 
     if (mysql_affected_rows($this->dbh) != 1) {
@@ -211,7 +209,8 @@ class bsLikiBackend {
   function getPage($page) {
     $this->autoFree($page);
     $page = $this->cleanPageName($page);
-    $res = mysql_query("SELECT * FROM " .$this->db_table. " WHERE name LIKE '$page'");
+    $res = mysql_query("SELECT * FROM `" .$this->db_table. "` ".
+                       "WHERE name LIKE '$page'");
     if (!$res) {
       trigger_error("could not get content of page $page");
       return false;
@@ -230,7 +229,8 @@ class bsLikiBackend {
   function getTimestamp($page) {
     $this->autoFree($page);
     $page = $this->cleanPageName($page);
-    $res = mysql_query("SELECT timestamp_change FROM " .$this->db_table. " WHERE name LIKE '$page'");
+    $res = mysql_query("SELECT timestamp_change FROM `" .$this->db_table. "` ".
+                       "WHERE name LIKE '$page'");
     if (!$res) {
       trigger_error("could not get content of page $page");
       return false;
@@ -257,7 +257,7 @@ class bsLikiBackend {
       $timestamp = "timestamp_lock=$time, timestamp_change=$time, ";
     }
     $content = addslashes($content);
-    $query = 'UPDATE '.$this->db_table." SET ${timestamp}content='$content' ".
+    $query = 'UPDATE `'.$this->db_table."` SET ${timestamp}content='$content' ".
              "WHERE name LIKE '$page' AND (lockkey='$key')";
     mysql_query($query, $this->dbh);
 
