@@ -238,7 +238,7 @@ class bsLiki {
       $p = $this->getPage($this->activePage);
       if (!$this->specialPage)
         $this->backend->visitPage($this->activePage);
-      header('X-LIKI-Timestamp: '.$p['timestamp_changed']);
+      header('X-LIKI-Timestamp: '.$p['timestamp_change']);
       header('Content-type: text/html; charset=UTF-8');
       // this is just a fix for a safari/konqueror bug.
       // the client MUST kill this line!
