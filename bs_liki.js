@@ -27,6 +27,7 @@ var eStatusLine;
 var eRecentChanges;
 var eRecentVisits;
 var eUploadIFrame;
+var haveMSXML;
 
 var lastContentEvent;
 //var lastContentCursorPosition;
@@ -123,12 +124,13 @@ function updateTimestamps(element, what) {
     return;
   }
   var c = "";
+  //alert(what);
   var changes = what.split(",");
   //var baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   for (var i = 0; i < changes.length; i++) {
     if (i > 0 && i < changes.length) c += " |"
     var data = changes[i].split("/");
-    c += " <a href=\""+baseURI+"/"+data[0]+"\">"+data[0]+"</a> <span class=\"time\">"+data[1]+"</span>";
+    c += " <a href=\""+encodeURI(baseURI+"/"+data[0])+"\">"+formatXMLchars(data[0])+"</a> <span class=\"time\">"+data[1]+"</span>";
   }
   element.innerHTML=c;
 }
@@ -257,8 +259,8 @@ function formatParagraph(p) {
   // externe links
   p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/g, '$1<a class="external" href="$2">$2</a>');
   // externe links (mit text)
-  p = p.replace(/\[(http\:\/\/[^\s\"\']+)\]/g, '<a class="external" href="$1">$1</a>');
-  p = p.replace(/\[(http\:\/\/[^\s\"\']+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
+  p = p.replace(/\[(http\:\/\/[\S]+)\]/g, '<a class="external" href="$1">$1</a>');
+  p = p.replace(/\[(http\:\/\/[\S]+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
   // liki-seiten
   p = p.replace(/\[\[?([^\'\"\]\[\%\s\/\\]+)\]?\]/g,
                 '<a class="internal" href="' + baseURI + '/$1">$1</a>');
@@ -328,8 +330,11 @@ function switchEditMode() {
 
 function createRequest() {
   var req = false;
+  haveMSXML = true;
   if (window.XMLHttpRequest) {
     req = new XMLHttpRequest();
+    haveMSXML = false;
+    return req;
   } else if (window.ActiveXObject) {
     try {
       req = new ActiveXObject("Msxml2.XMLHTTP");
@@ -337,7 +342,7 @@ function createRequest() {
       try {
         req = new ActiveXObject("Microsoft.XMLHTTP");
       } catch (e2) {
-        // bla.
+        alert('Could not create XMLHTTPRequest.');
       }
     }
   }
@@ -426,8 +431,8 @@ function createTimestampHandler(req) {
           // TODO: URI decoding, etc.
           qstr = "&q=" + pageQuery;
         }
-        r.open("GET", mainURI+"?action=load" + qstr, true);
-        r.send("");
+        r.open("POST", mainURI+"?action=load" + qstr, true);
+        if (haveMSXML) r.send(); else r.send("");
         return;
       }
     }
@@ -459,6 +464,7 @@ function createLoadHandler(req/*, ts*/) {
           var text = req.responseText;
           // KHTML BUG:
           pageContent = text.slice(text.indexOf("\n") + 1);
+          //pageContent = text;
           eEditContent.value = pageContent;
           lastTimestamp = req.getResponseHeader('X-LIKI-Timestamp');
           var scroll1 = getPageScroll();
@@ -488,6 +494,7 @@ function initLiki(u, t, readonly, query) {
   pageQuery = query;
   lastTimestamp = 0;
   transmitting = false;
+  haveMSXML = false;
 
   baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   
@@ -507,10 +514,10 @@ function initLiki(u, t, readonly, query) {
 
   if (pageIsReadOnly) {
     eEditButton.style.display = 'none';
+  } else {
+    // search-as-you-type doesn't work in konqueror without this one:
+    eEditButton.focus();
   }
-  //dumpVars();
-  // search-as-you-type doesn't work in konqueror without this one:
-  eEditButton.focus();
   interval = setInterval('transmitChanges()', timeout);
 }
 
@@ -545,14 +552,37 @@ function transmitChanges() {
         // TODO: URI decoding, etc.
         qstr = "&q=" + pageQuery;
       }
-      req.open("GET", mainURI+"?action=load" + qstr, true);
-      req.send("");
+      try {
+        if (haveMSXML) req.open("POST", mainURI+ "?action=load" + qstr, true);
+        else req.open("GET", mainURI + "?action=load" + qstr, true);
+      } catch(e) {
+        alert('could not open request: '+e.description);
+        setStatus('Loading Page aborted.');
+        return false;
+      }
+      //mainURI+"?action=load" + qstr, true);
+      try {
+        if (haveMSXML) req.send();
+        else req.send(null);
+      } catch(e) {
+        alert('could not send request: '+e.description);
+        setStatus('Loading Page aborted.');
+        return false;
+      }
     } else {
       setStatus("Checking for changes....");
       var req = createRequest();
       req.onreadystatechange = createTimestampHandler(req);
-      req.open("GET", mainURI+"?action=timestamp", true);
-      req.send("");
+      try {
+        if (haveMSXML) req.open("POST", mainURI+ "?action=timestamp", true);
+        else req.open("GET", mainURI + "?action=timestamp", true);
+      } catch(e) {
+        alert('could not open request: '+e.description);
+        setStatus('Loading Page aborted.');
+        return false;
+      }
+      if (haveMSXML) req.send();
+      else req.send(null);
     }
   }
 }
