@@ -135,7 +135,7 @@ class bsLikiBackend {
       if ($days > 0 || $hours > 0 || $minutes > 0)
         $changes .= str_pad($minutes, 2, '0', STR_PAD_LEFT).'m';
       $changes .= str_pad($seconds, 2, '0', STR_PAD_LEFT).'s';
-      $list[] = array('name'       => $r[name],
+      $list[] = array('name'       => $r['name'],
                       'howlongago' => $changes);
     }
     mysql_free_result($res);
