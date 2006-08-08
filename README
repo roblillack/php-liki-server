@@ -1,0 +1,10 @@
+INSTALLATION
+
+* Make sure you have a PHP & MySQL enabled apache server with mod_rewrite.
+* Get the software from it's darcs-repository at http://devel.burningsoda.com/darcs/liki/
+* Adjust the database settings in config.php
+* If the directory where you install the software on your webserver is not /liki you need to tinker with the supplied .htaccess file, too.
+* Make sure pix/ is writable by your web server. (ie. chmod a+rwx data)
+* The table specified in config.php will be created on first startup.
+* ...and Play!
+
