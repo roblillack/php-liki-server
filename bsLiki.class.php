@@ -201,7 +201,7 @@ class bsLiki {
     if (isset($_FILES['userfile']) && !empty($_FILES['userfile']['tmp_name'])) {
       $tmp = $_FILES['userfile']['tmp_name'];
       $newname = time().'-'.preg_replace('/[^0-9a-zA-Z_\-\.]/', '_', $this->getRequest('page').'--'.$_FILES['userfile']['name']);
-      if (@move_uploaded_file($_FILES['userfile']['tmp_name'], $this->dataDir."/$newname") === true) {
+      if (move_uploaded_file($_FILES['userfile']['tmp_name'], $this->dataDir."/$newname") === true) {
         $result = 'Success';
         $url = $this->baseUrl."/".$this->dataDir."/$newname";
       }
@@ -214,7 +214,7 @@ class bsLiki {
   <link rel="stylesheet" type="text/css" href="<?php echo $this->baseUrl;?>/liki.css" />
   <script type="text/javascript" src="<?php echo $this->baseUrl;?>/bs_liki.js"></script>
  </head>
- <body id="uploadbody" onload="uploadSuccess('<?=$url;?>');">
+ <body id="uploadbody" <?php if ($result === 'Success') echo("onLoad=\"uploadSuccess('$url');\""); ?>>
   <h1><?=$result;?></h1>
  </body>
 </html>

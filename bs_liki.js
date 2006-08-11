@@ -33,12 +33,13 @@ var lastContentEvent;
 //var lastContentCursorPosition;
 
 function clickUploadButton() {
+  // attention! variables may not be initialized!
   if (!eUploadIFrame.style.display || eUploadIFrame.style.display == 'none') {
     eUploadIFrame.setAttribute('src', mainURI+'?action=uploadform');
     eUploadIFrame.style.display = 'block';
-    //eUploadIFrame.contentDocument.getElementById('uploadform').elements['userfile'].click();
   } else {
     eUploadIFrame.style.display = 'none';
+    eUploadIFrame.setAttribute('src', '');
   }
 }
 
@@ -49,8 +50,10 @@ function doUpload() {
 }
 
 function uploadSuccess(picurl) {
-  var eIFrame = window.parent.document.getElementById('uploadiframe');
-  eIFrame.style.display = 'none';
+  // attention! all vars are not initialized.
+  eUploadIFrame = window.parent.document.getElementById('uploadiframe');
+  if (!eIFrame) return;
+  clickUploadButton();
   eEditContent = window.parent.document.getElementById('content');
   var cursorpos = eEditContent.selectionStart;
   var contentBefore = eEditContent.value.substring(0, cursorpos);
@@ -297,7 +300,6 @@ function setEditMode(onoff) {
     eEditButton.setAttribute('accessKey', 'q');
     eEditButton.innerHTML = 'save &amp; <u>q</u>uit';
     eUploadButton.style.display = 'inline';
-    eUploadIFrame.style.display = 'none';
     body.style.overflow = 'hidden';
     setStatus('Editing...');
     eEditContent.focus();
@@ -386,6 +388,7 @@ function createSaveHandler(req) {
       if (req.status && req.status == 200) {
         setStatus('Saved');
       } else {
+        //alert('got save-status of '+req.status+'. ignoring :)');
         setEditMode(false);
       }
       transmitting = false;
