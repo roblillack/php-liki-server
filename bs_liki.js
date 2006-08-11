@@ -39,7 +39,7 @@ function clickUploadButton() {
     eUploadIFrame.style.display = 'block';
   } else {
     eUploadIFrame.style.display = 'none';
-    eUploadIFrame.setAttribute('src', '');
+    eUploadIFrame.setAttribute('src', 'about:blank');
   }
 }
 
@@ -52,7 +52,7 @@ function doUpload() {
 function uploadSuccess(picurl) {
   // attention! all vars are not initialized.
   eUploadIFrame = window.parent.document.getElementById('uploadiframe');
-  if (!eIFrame) return;
+  if (!eUploadIFrame) return;
   clickUploadButton();
   eEditContent = window.parent.document.getElementById('content');
   var cursorpos = eEditContent.selectionStart;

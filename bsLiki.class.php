@@ -33,13 +33,12 @@ class bsLiki {
    * compatible with different php versions.
    */
   function getRequest($varname, $slashed = true) {
-    global $HTTP_GET_VARS, $HTTP_POST_VARS, $HTTP_SERVER_VARS;
     $v = '';
 
-    if (isset($HTTP_GET_VARS[$varname])) {
-      $v = $HTTP_GET_VARS[$varname];
-    } elseif (isset($HTTP_POST_VARS[$varname])) {
-      $v = $HTTP_POST_VARS[$varname];
+    if (isset($_GET[$varname])) {
+      $v = $_GET[$varname];
+    } elseif (isset($_POST[$varname])) {
+      $v = $_POST[$varname];
     }
 
     if (get_magic_quotes_gpc() == 0) {
@@ -286,7 +285,7 @@ class bsLiki {
       }
       $this->quit();
     } elseif ($this->getRequest('action') == 'requestlock') {
-      $newkey = md5($HTTP_SERVER_VARS['REMOTE_ADDR'].time().rand());
+      $newkey = md5($_SERVER['REMOTE_ADDR'].time().rand());
       if (!$this->specialPage && $this->backend->lockPage($this->activePage, $newkey)) {
         //header("HTTP/1.1 204 lock acquired");
         header('Content-type: text/plain; charset=UTF-8');

@@ -259,6 +259,7 @@ class bsLikiBackend {
     $content = addslashes($content);
     $query = 'UPDATE `'.$this->db_table."` SET ${timestamp}content='$content' ".
              "WHERE name LIKE '$page' AND (lockkey='$key')";
+    //trigger_error($query);
     mysql_query($query, $this->dbh);
 
     if (mysql_affected_rows($this->dbh) != 1) {
@@ -267,6 +268,7 @@ class bsLikiBackend {
       if ($matches == 1) { // stimmt alles, nur kein update
         return true;
       } else {          // key falsch oder seitenname falsch
+        //trigger_error(mysql_info());
         return false;
       }
     } else {
