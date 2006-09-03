@@ -206,12 +206,12 @@ function formatContent(input) {
       case 'music':
         input += '<p><a href="' + content + '" class="music">' +
                  content.match(/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i)[1] +
-                 '</p>\n';
+                 '</a></p>\n';
         break;
       case 'video':
         input += '<p><a href="' + content + '" class="video">' +
                  content.match(/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i)[1] +
-                 '</p>\n';
+                 '</a></p>\n';
         break;
       case 'line':
         input += '<hr />\n';
