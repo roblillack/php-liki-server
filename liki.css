@@ -443,3 +443,20 @@ a.external:hover {
   border-bottom-color: red;
 }
 
+a.music:before {
+  /* U+266B BEAMED EIGHTH NOTES */
+  content: '\266b';
+  color: black;
+  font-size: 150%;
+  margin-right: 5px;
+}
+
+a.music {
+  text-decoration: none;
+  border-bottom: 1px solid #ccc;
+}
+
+a.music:hover {
+  border-bottom-color: red;
+}
+

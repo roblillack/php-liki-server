@@ -203,6 +203,16 @@ function formatContent(input) {
       case 'image':
         input += '<img src="' + content + '" alt="" class="centerpic" />\n';
         break;
+      case 'music':
+        input += '<p><a href="' + content + '" class="music">' +
+                 content.match(/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i)[1] +
+                 '</p>\n';
+        break;
+      case 'video':
+        input += '<p><a href="' + content + '" class="video">' +
+                 content.match(/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i)[1] +
+                 '</p>\n';
+        break;
       case 'line':
         input += '<hr />\n';
         break;
@@ -221,6 +231,8 @@ function getParagraphType(p) {
   if (p.match(/^[\#\*\-\+\"\'\;\|\!] /)) return p.charAt(0);
   else if (p.match(/^---+\s*$/)) return 'line';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\s*$/i)) return 'image';
+  else if (p.match(/^http\:\/\/[^\s\"\']+\.(mp3|ogg|aac|mpc|wma)\s*$/i)) return 'music';
+  else if (p.match(/^http\:\/\/[^\s\"\']+\.(avi|mpg|wmv|mov|asf|flv)\s*$/i)) return 'video';
   else return '';
 }
 
