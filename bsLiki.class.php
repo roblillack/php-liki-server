@@ -185,7 +185,7 @@ class bsLiki {
  <body id="uploadbody">
   <form id="uploadform" action="<?php echo $this->baseUrl.'/'.$this->activePage;?>" method="post" enctype="multipart/form-data">
    <input type="hidden" name="action" value="uploadpic" />
-   <input type="file" name="userfile" value="" onchange="doUpload();" />
+   <input type="file" name="userfile" value="" onchange="doUpload();" size="48"/>
   </form>
  </body>
 </html>
