@@ -74,7 +74,7 @@ class bsLikiBackend {
     $page = $this->cleanPageName($page);
     $timestamp = time();
     return mysql_query("UPDATE `".$this->db_table."` SET lockkey='' WHERE ".
-                       "(timestamp_lock < $timestamp - 60) AND ".
+                       "(timestamp_lock < $timestamp - 180) AND ".
                        "name LIKE '$page'", $this->dbh);
   }
 
