@@ -30,9 +30,9 @@ $l->sendHeaders();
   <a accessKey="f" href="<?php echo $l->baseUrl;?>/frontpage" id="likititle"><?=$title?></a>
 <?php if (!$l->legacyMode) { ?>
   <div id="toolbar">
+   <?php if (session_id()) { ?><a id="logoutbutton" accessKey="o" href="<?php echo $l->baseUrl;?>/?logout">log <u>o</u>ut</a> |<?php } ?>
    <span id="uploadbutton"><a accessKey="p" href="javascript:clickUploadButton()">insert <u>p</u>icture</a> |</span>
    <a id="editchecker" href="javascript:switchEditMode()" class="readmode">...</a>
-   <?php if (session_id()) { ?><a id="logoutbutton" accessKey="o" href="<?php echo $l->baseUrl;?>/?logout">log <u>o</u>ut</a><?php } ?>
   </div>
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
