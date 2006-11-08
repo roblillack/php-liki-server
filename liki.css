@@ -460,3 +460,76 @@ a.music:hover {
   border-bottom-color: red;
 }
 
+
+body.loginpanel {
+  min-height: 0;
+  background-color: #fff;
+  border: 0;
+  text-align: left;
+  font-family: sans-serif;
+}
+
+body.loginpanel div.loginpanel {
+  height: 150px;
+  width: 300px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: -175px;
+  margin-top: -100px;
+  border: 1px solid #aaa;
+  background-color: #eee;
+  padding: 25px;
+}
+
+.loginpanel h1 {
+  font-size: 16px;
+  letter-spacing: -1px;
+  color: black;
+  margin: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #999;
+}
+
+.loginpanel p {
+  font-size: 12px;
+  color: #333;
+  margin-top: 5px;
+  margin-bottom: 0px;
+}
+
+.loginpanel div input {
+  width: 300px;
+  margin: 0;
+  border: 1px solid #ff9;
+  background-color: #ffc;
+}
+
+.loginpanel input#submitbutton {
+  color: black;
+  width: 100px;
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 3px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  background-color: #ccc;
+  border-bottom: 1px solid #999;
+  border-right: 1px solid #999;
+  margin-top: 15px;
+}
+
+.loginpanel input:hover {
+  background-color: #fcc;
+  border: 1px solid #f99;
+}
+
+.loginpanel input#submitbutton:hover {
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  background-color: #fcc;
+  border-bottom: 1px solid #f99;
+  border-right: 1px solid #f99;
+}
+

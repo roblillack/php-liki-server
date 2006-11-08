@@ -8,6 +8,9 @@ class bsLiki {
   var $specialPage = false;
   var $legacyMode = false;
   var $key = false;
+  var $passwordProtected = false;
+  var $username = '';
+  var $password = '';
   var $dataDir = 'data';
 
   function sendHeaders() {
@@ -173,6 +176,12 @@ class bsLiki {
     return $p;
   }
 
+  function getFormattedPage($page) {
+    $p = $this->getPage($page);
+
+    return $p;
+  }
+
   function sendUploadForm() {
     $this->sendHeaders();
 ?>
@@ -221,12 +230,103 @@ class bsLiki {
     $this->quit();
   }
   
+  function sendLoginPanel($text) {
+    header("Content-type: text/html; charset=UTF-8");
+    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+    header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+    header("Cache-Control: no-cache, must-revalidate");
+    header("Pragma: no-cache");
+
+    echo "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n";
+    echo "<html>\n";
+    echo " <head>\n";
+    echo "  <title>Liki Login</title>\n";
+    echo "  <link rel=\"stylesheet\" type=\"text/css\" href=\"".$this->baseUrl."/liki.css\" />\n";
+    /*echo "  <meta name=\"description\" content=\"bs|area51.\" />\n";
+    echo "  <meta name=\"author\" content=\"robert lillack &lt;rob@burningsoda.com&gt;\" />\n";
+    echo "  <meta name=\"publisher\" content=\"burningsoda.com, leipzig, germany\" />\n";
+    echo "  <meta name=\"copyright\" content=\"burningsoda.com\" />\n";*/
+    echo "  <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" />\n";
+    echo " </head>\n";
+    echo " <body class='loginpanel'>\n";
+    echo "  <div class='loginpanel'>\n";
+    echo "   <h1>".$text."</h1>\n";
+    //echo "   <h2>".$_SESSION['loggedin']."</h2>\n";
+    //echo "   <h2>".session_id()."</h2>\n";
+    echo "   <form method='POST' action='".$this->baseUrl."/' >\n";
+    echo "    <p>Username:</p>\n";
+    echo "    <div><input type='text' name='username' value='' /></div>\n";
+    echo "    <p>Password:</p>\n";
+    echo "    <div><input type='password' name='password' value='' /></div>\n";
+    echo "    <div><input id='submitbutton' type='submit' value='Login' /></div>\n";
+    echo "   </form>\n";
+    echo "  </div>\n";
+    echo " </body>\n";
+    echo "</html>\n";
+    $this->quit();
+  }
+  
   function bsLiki() {
     require("config.php");
     if ($this->baseUrl === false) {
       die('No baseUrl configured.');
     }
-
+    
+    if ($this->passwordProtected === true) {
+      // ok, secure this one
+      
+      if (empty($this->username) || strlen($this->password) != 32) {
+        die('User/Password not correctly configured.');
+      }
+      
+      session_start();
+      if (!isset($_SESSION['loggedin'])) {
+        $_SESSION['loggedin'] = 'no';
+      }
+      
+      if ($_SESSION['loggedin'] == 'no') {
+        // has no valid session
+        
+        if (isset($_GET['action'])) {
+          // is an asynchronous request
+          header("HTTP/1.0 401 Unauthorized");
+          print("<html><h1>Access denied.</h1></html>\n");
+          $this->quit();
+        } else {
+          // is a "interactive" request
+          if (isset($_POST['username']) && isset($_POST['password'])) {
+            // got username/password
+            if ($_POST['username'] === $this->username &&
+                md5($_POST['password']) === $this->password) {
+              // combination is right
+              $_SESSION['loggedin'] = 'yes';
+              session_write_close();
+              header('Location: '.$this->baseUrl);
+              $this->quit();
+            } else {
+              // combination is wrong
+              $this->sendLoginPanel("Wrong password, dude.");
+            }
+          } else {
+            // no username/password given
+            $this->sendLoginPanel("Please Login");
+          }
+        }
+      }
+      
+      // valid session found
+      if (isset($_GET['logout'])) {
+        // user wants to end session
+        $_SESSION = array();
+        if (isset($_COOKIE[session_name()])) {
+          setcookie(session_name(), '', time()-42000, '/');
+        }
+        session_destroy();
+        header('Location: '.$this->baseUrl);
+        $this->quit();
+      }
+    }
+    
     $this->activePage = $this->getRequest('page', false);
     if (!$this->isLegitPageName($this->activePage) || $this->activePage == "") {
       header('Location: '.$this->baseUrl.'/frontpage');

@@ -32,6 +32,7 @@ $l->sendHeaders();
   <div id="toolbar">
    <span id="uploadbutton"><a accessKey="p" href="javascript:clickUploadButton()">insert <u>p</u>icture</a> |</span>
    <a id="editchecker" href="javascript:switchEditMode()" class="readmode">...</a>
+   <?php if (session_id()) { ?><a id="logoutbutton" accessKey="o" href="<?php echo $l->baseUrl;?>/?logout">log <u>o</u>ut</a><?php } ?>
   </div>
   <form id="contenteditor" action="." method="post" accept-charset="UTF-8">
    <div><textarea rows="10" cols="10" name='content' id="content"></textarea></div>
@@ -51,9 +52,9 @@ $l->sendHeaders();
 <?php
 } else {
   echo '<div style="visibility: visible;" id="viewcontent">';
-  $p = $l->getPage($l->activePage);
+  $p = $l->getFormattedPage($l->activePage);
   echo "<h1>".$l->activePage."</h1>\n";
-  echo "<pre>".htmlspecialchars($p['content'])."</pre>\n";
+  echo $p['content'];
   echo "</div>\n";
 }
 ?>
