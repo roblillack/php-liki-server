@@ -53,7 +53,6 @@ $l->sendHeaders();
 } else {
   echo '<div style="visibility: visible;" id="viewcontent">';
   $p = $l->getFormattedPage($l->activePage);
-  echo "<h1>".$l->activePage."</h1>\n";
   echo $p['content'];
   echo "</div>\n";
 }

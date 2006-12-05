@@ -176,10 +176,132 @@ class bsLiki {
     return $p;
   }
 
-  function getFormattedPage($page) {
-    $p = $this->getPage($page);
+  function getParagraphType($content) {
+    if (preg_match('/^[\#\*\-\+\"\'\;\|\!] /', $content)) return $content[0];
+    else if (preg_match('/^---+\s*$/', $content)) return 'line';
+    else if (preg_match('/^http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\s*$/i', $content)) return 'image';
+    else if (preg_match('/^http\:\/\/[^\s\"\']+\.(mp3|ogg|aac|mpc|wma)\s*$/i', $content)) return 'music';
+    else if (preg_match('/^http\:\/\/[^\s\"\']+\.(avi|mpg|wmv|mov|asf|flv)\s*$/i', $content)) return 'video';
+    else return '';
+  }
+
+  function cleanParagraph($content) {
+    $content = preg_replace('/(^|\n)\ \ ([^\n]+)/', '$1$2', $content);
+    $content = preg_replace('/^[\#\*\-\+\"\'\;\|\!] /', '', $content);
+    return $content;
+  }
+
+  function formatParagraph($content) {
+    $p = htmlspecialchars($content);
+    // some symbols
+    $p = preg_replace('/(^|[^-])--(?=([^-]|$))/', '$1&ndash;', $p);
+    $p = preg_replace('/(^|[^-])---(?=([^-]|$))/', '$1&mdash;', $p);
+    // _emphasized_, *bold*, -striked-
+    $p = preg_replace('/(\W|^)\*(\S[\S\ ]*?\S)\*(?=(\W|$))/', '$1<strong>$2</strong>', $p);
+    $p = preg_replace('/(\W|^)\-(\S[\S\ ]*?\S)\-(?=(\W|$))/', '$1<s>$2</s>', $p);
+    $p = preg_replace('/(\W|^)\_(\S[\S\ ]*?\S)\_(?=(\W|$))/', '$1<em>$2</em>', $p);
+    // externe links
+    $p = preg_replace('/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/', '$1<a class="external" href="$2">$2</a>', $p);
+    // externe links (mit text)
+    $p = preg_replace('/\[(http\:\/\/[\S]+)\]/', '<a class="external" href="$1">$1</a>', $p);
+    $p = preg_replace('/\[(http\:\/\/[\S]+)\ ([\S][\S\ ]*?[\S]+)\]/', '<a class="external" href="$1">$2</a>', $p);
+    // liki-seiten
+    $p = preg_replace('/\[\[?([^\'\"\]\[\%\s\/\\\\]+)\]?\]/', '<a class="internal" href="' . $this->baseUrl . '/$1">$1</a>', $p);
+    // liki-seiten (mit text)
+    $p = preg_replace('/(^|[^\\\\])\[\[?([^\'\"\]\[\%\s\/\\\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/', '$1<a class="internal" href="' . $this->baseUrl . '/$2">$3</a>', $p);
+    // colors
+    $p = preg_replace('/\{(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow|#[0-9a-f]{3}([0-9a-f]{3})?)\ (.*?[^\\\\])\}/i', '<span style="color:$1;">$3</span>', $p);
+    // forced line breaks
+    $p = preg_replace('/\ \/\/\ *[\r\n]/', "<br />", $p);
+    // escaping
+    $p = preg_replace('/\\\\(.)/', '$1', $p);
 
     return $p;
+  }
+
+  function formatCodeParagraph($content) {
+    return $content;
+  }
+
+  function getFormattedPage($page) {
+    $page = $this->getPage($page);
+    $p = $page['content'];
+
+    // one line paragraphs (i.e. section headings)
+    $p = preg_replace('/(^|\n)([\#\*])\ ([^\n]+)/', "$1\n$2 $3\n", $p);
+    // multiline paragraphs
+    $p = preg_replace('/(^|\n)([\-\+\"\'\;\|\!]\ ([^\n](\n\ [^\n]|[^\n])+))/', "\n$1$2\n", $p);
+    // lines
+    $p = preg_replace('/(^|\n)---+\ *\n/', "$1---\n\n", $p);
+
+    $p = preg_replace('/^\s*/', '', $p);
+    $paragraphs = preg_split('/\n\s*\n/', $p);
+    $output = "";
+    for ($i = 0; $i < count($paragraphs); $i++) {
+      $p = $paragraphs[$i];
+      $type = $this->getParagraphType($p);
+      $content = $this->cleanParagraph($p);
+      switch ($type) {
+        case '':
+          // normal text paragraphs
+          $output .= "<p>" . $this->formatParagraph($content) . "</p>\n";
+          break;
+        case '-': case '+':
+          // lists
+          if ($i == 0 || $this->getParagraphType($paragraphs[$i-1]) != $type) {
+            if ($type == '-') $output .= "<ul>\n";
+            else $output .= "<ol>\n";
+          }
+          $output .= " <li>" . $this->formatParagraph($content) . "</li>\n";
+          if ($i == count($paragraphs) - 1 || $this->getParagraphType($paragraphs[$i+1]) != $type) {
+            if ($type == '-') $output .= "</ul>\n";
+            else $output .= "</ol>\n";
+          }
+          break;
+        case '#':
+          $output .= "\n\n<h1>" . $this->formatParagraph($content) . "</h1>\n";
+          break;
+        case '*':
+          $output .= "\n\n<h2>" . $this->formatParagraph($content) . "</h2>\n";
+          break;
+        case '"':
+          $output .= "<blockquote>" . $this->formatParagraph($content) . "</blockquote>\n";
+          break;
+        case '\'':
+          $output .= "<blockquote class=\"comment\">"
+            . $this->formatParagraph($content) . "</blockquote>\n";
+          break;
+        case ';':
+          $output .= "<pre>" . $this->formatCodeParagraph($content) . "</pre>\n";
+          break;
+        case '|':
+          $output .= '<p style="text-align: center;">' . $this->formatParagraph(content) . "</p>\n";
+          break;
+        case 'image':
+          $output .= '<img src="' . $content . '" alt="" class="centerpic" />'."\n";
+          break;
+        case 'music':
+          $matches = preg_match('/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i', $content);
+          $output .= '<p><a href="' . $content . '" class="music">' . $matches[1] . "</a></p>\n";
+          break;
+        case 'video':
+          $matches = preg_match('/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i', $content);
+          $output .= '<p><a href="' . $content . '" class="video">' .  $matches[1] . "</a></p>\n";
+          break;
+        case 'line':
+          $output .= "<hr />\n";
+          break;
+        case '!':
+          $output .= $content;
+          break;
+        default:
+          $output .= "<br/><b>Type: [".$type."]</b>";
+          $output .= "<pre style='border: 1px solid red;'>".$content."</pre>";
+      }
+    }
+
+    $page['content'] = $output;
+    return $page;
   }
 
   function sendUploadForm() {
@@ -341,8 +463,18 @@ class bsLiki {
       $this->specialPage = true;
     }
 
-    if ($this->getRequest('legacymode') == 'true') {
-      $this->legacyMode = true;
+    if ($this->getRequest('legacymode') == 'true' ||
+        $this->getRequest('legacymode') == 'false') {
+      $this->legacyMode = ($this->getRequest('legacymode') == 'true') ? true : false;
+    } else {
+      if (strpos($_SERVER['HTTP_USER_AGENT'], 'Gecko') ||
+          strpos($_SERVER['HTTP_USER_AGENT'], 'KHTML') ||
+          strpos($_SERVER['HTTP_USER_AGENT'], 'Konqueror') ||
+          strpos($_SERVER['HTTP_USER_AGENT'], 'Opera')) {
+        $this->legacyMode = false;
+      } else {
+        $this->legacyMode = true;
+      }
     }
 
     $this->backend = new bsLikiBackend();
