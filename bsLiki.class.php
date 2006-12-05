@@ -467,10 +467,10 @@ class bsLiki {
         $this->getRequest('legacymode') == 'false') {
       $this->legacyMode = ($this->getRequest('legacymode') == 'true') ? true : false;
     } else {
-      if (strpos($_SERVER['HTTP_USER_AGENT'], 'Gecko') ||
-          strpos($_SERVER['HTTP_USER_AGENT'], 'KHTML') ||
-          strpos($_SERVER['HTTP_USER_AGENT'], 'Konqueror') ||
-          strpos($_SERVER['HTTP_USER_AGENT'], 'Opera')) {
+      if (strpos($_SERVER['HTTP_USER_AGENT'], 'Gecko') !== false ||
+          strpos($_SERVER['HTTP_USER_AGENT'], 'KHTML') !== false ||
+          strpos($_SERVER['HTTP_USER_AGENT'], 'Konqueror' !== false ||
+          strpos($_SERVER['HTTP_USER_AGENT'], 'Opera') !== false) {
         $this->legacyMode = false;
       } else {
         $this->legacyMode = true;
