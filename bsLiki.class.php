@@ -469,7 +469,7 @@ class bsLiki {
     } else {
       if (strpos($_SERVER['HTTP_USER_AGENT'], 'Gecko') !== false ||
           strpos($_SERVER['HTTP_USER_AGENT'], 'KHTML') !== false ||
-          strpos($_SERVER['HTTP_USER_AGENT'], 'Konqueror' !== false ||
+          strpos($_SERVER['HTTP_USER_AGENT'], 'Konqueror') !== false ||
           strpos($_SERVER['HTTP_USER_AGENT'], 'Opera') !== false) {
         $this->legacyMode = false;
       } else {
