@@ -275,7 +275,7 @@ class bsLiki {
           $output .= "<pre>" . $this->formatCodeParagraph($content) . "</pre>\n";
           break;
         case '|':
-          $output .= '<p style="text-align: center;">' . $this->formatParagraph(content) . "</p>\n";
+          $output .= '<p style="text-align: center;">' . $this->formatParagraph($content) . "</p>\n";
           break;
         case 'image':
           $output .= '<img src="' . $content . '" alt="" class="centerpic" />'."\n";
