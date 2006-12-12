@@ -428,6 +428,7 @@ class bsLiki {
               $this->quit();
             } else {
               // combination is wrong
+              header("HTTP/1.0 401 Unauthorized");
               $this->sendLoginPanel("Wrong password, dude.");
             }
           } else {
