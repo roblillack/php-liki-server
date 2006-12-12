@@ -401,6 +401,7 @@ class bsLiki {
         die('User/Password not correctly configured.');
       }
       
+      session_name('LIKISESSION');
       session_start();
       if (!isset($_SESSION['loggedin'])) {
         $_SESSION['loggedin'] = 'no';
