@@ -1,7 +1,7 @@
 /*
  * bs|liki by Robert Lillack.
  * 
- * ©2005-2006 burningsoda.com
+ * ©2005-2007 burningsoda.com
  */
 
 var baseURI;
@@ -154,7 +154,7 @@ function formatContent(input) {
   // one line paragraphs (i.e. section headings)
   input = input.replace(/(^|\n)([\#\*])\ ([^\n]+)/g, '$1\n$2 $3\n');
   // multiline paragraphs
-  input = input.replace(/(^|\n)([\-\+\"\'\;\|\!]\ ([^\n](\n\ [^\n]|[^\n])+))/g, '\n$1$2\n');
+  input = input.replace(/(^|\n)(([\-\+\"\'\;\|\!]|\[(\ |X|\*)\]|\((\ |X|\*)\))\ ([^\n](\n\ [^\n]|[^\n])+))/g, '\n$1$2\n');
   // lines
   input = input.replace(/(^|\n)---+\ *\n/g, '$1---\n\n');
   // now, split it up.
@@ -200,6 +200,18 @@ function formatContent(input) {
       case '|':
         input += '<p style="text-align: center;">' + formatParagraph(content) + '</p>\n';
         break;
+      case 'check-checked':
+        input += '<div><tt>[X]&nbsp;</tt><s>' + formatParagraph(content) + '</s></div>';
+        break;
+      case 'check':
+        input += '<div><tt>[&nbsp;]&nbsp;</tt>' + formatParagraph(content) + '</div>';
+        break;
+      case 'radio-checked':
+        input += '<div><tt>(*)&nbsp;</tt><strong>' + formatParagraph(content) + '</strong></div>';
+        break;
+      case 'radio':
+        input += '<div><tt>(&nbsp;)&nbsp;</tt>' + formatParagraph(content) + '</div>';
+        break;
       case 'image':
         input += '<img src="' + content + '" alt="" class="centerpic" />\n';
         break;
@@ -230,6 +242,10 @@ function formatContent(input) {
 function getParagraphType(p) {
   if (p.match(/^[\#\*\-\+\"\'\;\|\!] /)) return p.charAt(0);
   else if (p.match(/^---+\s*$/)) return 'line';
+  else if (p.match(/^\[ \] .*$/i)) return 'check';
+  else if (p.match(/^\( \) .*$/i)) return 'radio';
+  else if (p.match(/^\[(X|\*)\] .*$/i)) return 'check-checked';
+  else if (p.match(/^\((X|\*)\) .*$/i)) return 'radio-checked';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\s*$/i)) return 'image';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(mp3|ogg|aac|mpc|wma)\s*$/i)) return 'music';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(avi|mpg|wmv|mov|asf|flv)\s*$/i)) return 'video';
@@ -238,7 +254,7 @@ function getParagraphType(p) {
 
 function cleanParagraph(p) {
   // clean the leading marker and/or spaces (for code)
-  return p.replace(/(^|\n)\ \ ([^\n]+)/g, '$1$2').replace(/^[\#\*\-\+\"\'\;\|\!] /, '');
+  return p.replace(/(^|\n)\ \ ([^\n]+)/g, '$1$2').replace(/^([\#\*\-\+\"\'\;\|\!]|\[(\ |X|x|\*)\]|\((\ |X|x|\*)\)) /, '');
 }
 
 function formatXMLchars(input) {
