@@ -327,32 +327,37 @@ class bsLiki {
 
   function resizePicture($fullname, $basename = false) {
     if (!function_exists("imagetypes")) {
-      trigger_error("NO IMAGETYPES.");
       return false;
     }
 
     if (!$basename) {
-      $basename = md5(time().$oldname);
+      $basename = md5(time().$fullname);
     }
-    if (!file_exists($fullname) || !is_readable($fullname)) return false;
+    if (!file_exists($fullname) || !is_readable($fullname)) {
+      return false;
+    }
 
     $origtype = false;
-    if (preg_match('/.*\.jp(e|)g$/i', $fullname)) {
-      if (!(ImageTypes() & IMG_JPG)) return false;
+    if (ImageTypes() & IMG_JPG) {
       $original = ImageCreateFromJpeg($fullname);
       $origtype = IMG_JPG;
-    } elseif (preg_match('/.*\.gif$/i', $fullname)) {
-      if (!(ImageTypes() & IMG_GIF)) return false;
+    }
+    if (!$original && ImageTypes() & IMG_GIF) {
       $original = ImageCreateFromGif($fullname);
       $origtype = IMG_GIF;
-    } elseif (preg_match('/.*\.png$/i', $fullname)) {
-      if (!(ImageTypes() & IMG_PNG)) return false;
+    }
+    if (!$original && ImageTypes() & IMG_PNG) {
       $original = ImageCreateFromPng($fullname);
       $origtype = IMG_PNG;
-    } else return false;
+    }
+
+    if (!$original) {
+      return false;
+    }
     $ow = ImageSX($original);
     $oh = ImageSY($original);
-    if (($w = $this->maximalPictureWidth) < $ow) {
+    $w = $this->maximalPictureWidth;
+    if ($ow < $w) {
       /* We recreate smaller pictures, too, to prevent clients from attacks */
       $w = $ow;
     }
@@ -376,7 +381,6 @@ class bsLiki {
   }
 
   function handleFileUpload() {
-    /** @todo check the contents. */
     $result = 'Failure';
     $url = '';
     if (isset($_FILES['userfile']) && !empty($_FILES['userfile']['tmp_name'])) {
@@ -395,10 +399,12 @@ class bsLiki {
           $url = $this->baseUrl."/$newname.$ext";
         }
       } else {
-        if (is_uploaded_file($_FILES['userfile']['tmp_name']) &&
-            $newname = $this->resizePicture($_FILES['userfile']['tmp_name'], $newname) !== false) {
-          $result = 'Success';
-          $url = $this->baseUrl."/$newname";
+        if (is_uploaded_file($_FILES['userfile']['tmp_name'])) {
+          $newname = $this->resizePicture($_FILES['userfile']['tmp_name'], $newname);
+          if ($newname !== false ) {
+            $result = 'Success';
+            $url = $this->baseUrl."/$newname";
+          }
         }
       }
     }
