@@ -12,6 +12,7 @@ class bsLiki {
   var $username = '';
   var $password = '';
   var $dataDir = 'data';
+  var $maximalPictureWidth = false;
 
   function sendHeaders() {
     header("Content-type: text/html; charset=UTF-8");
@@ -324,16 +325,81 @@ class bsLiki {
     $this->quit();
   }
 
+  function resizePicture($fullname, $basename = false) {
+    if (!function_exists("imagetypes")) {
+      trigger_error("NO IMAGETYPES.");
+      return false;
+    }
+
+    if (!$basename) {
+      $basename = md5(time().$oldname);
+    }
+    if (!file_exists($fullname) || !is_readable($fullname)) return false;
+
+    $origtype = false;
+    if (preg_match('/.*\.jp(e|)g$/i', $fullname)) {
+      if (!(ImageTypes() & IMG_JPG)) return false;
+      $original = ImageCreateFromJpeg($fullname);
+      $origtype = IMG_JPG;
+    } elseif (preg_match('/.*\.gif$/i', $fullname)) {
+      if (!(ImageTypes() & IMG_GIF)) return false;
+      $original = ImageCreateFromGif($fullname);
+      $origtype = IMG_GIF;
+    } elseif (preg_match('/.*\.png$/i', $fullname)) {
+      if (!(ImageTypes() & IMG_PNG)) return false;
+      $original = ImageCreateFromPng($fullname);
+      $origtype = IMG_PNG;
+    } else return false;
+    $ow = ImageSX($original);
+    $oh = ImageSY($original);
+    if (($w = $this->maximalPictureWidth) < $ow) {
+      /* We recreate smaller pictures, too, to prevent clients from attacks */
+      $w = $ow;
+    }
+    $h = ($oh * $w) / $ow;
+    $copy = ImageCreateTrueColor($w, $h);
+    ImageCopyResampled($copy, $original, 0, 0, 0, 0, $w, $h, $ow, $oh);
+    @unlink($fullname);
+    
+    $name = false;
+    if ($origtype == IMG_PNG) {
+      $name = $basename.'.png';
+      ImagePNG($copy, $name);
+    } elseif ($origtype == IMG_GIF) {
+      $name = $basename.'.gif';
+      ImageGIF($copy, $name);
+    } else {
+      $name = $basename.'.jpg';
+      ImageJPEG($copy, $name);
+    }
+    return $name;
+  }
+
   function handleFileUpload() {
     /** @todo check the contents. */
     $result = 'Failure';
     $url = '';
     if (isset($_FILES['userfile']) && !empty($_FILES['userfile']['tmp_name'])) {
       $tmp = $_FILES['userfile']['tmp_name'];
-      $newname = time().'-'.preg_replace('/[^0-9a-zA-Z_\-\.]/', '_', $this->getRequest('page').'--'.$_FILES['userfile']['name']);
-      if (move_uploaded_file($_FILES['userfile']['tmp_name'], $this->dataDir."/$newname") === true) {
-        $result = 'Success';
-        $url = $this->baseUrl."/".$this->dataDir."/$newname";
+      $dot = strrpos($_FILES['userfile']['name'], '.');
+      if ($dot < 1) {
+        $ext = '';
+      } else {
+        $ext = preg_replace('/[^a-z0-9]/', '', strtolower(substr($_FILES['userfile']['name'], $dot + 1)));
+      }
+      $newname = $this->dataDir.'/'.md5(time().$_FILES['userfile']['name']);
+      if ($this->maximalPictureWidth === false) {
+        /* clients may be attacked through modified picture files! */
+        if (move_uploaded_file($_FILES['userfile']['tmp_name'], "$newname.$ext") === true) {
+          $result = 'Success';
+          $url = $this->baseUrl."/$newname.$ext";
+        }
+      } else {
+        if (is_uploaded_file($_FILES['userfile']['tmp_name']) &&
+            $newname = $this->resizePicture($_FILES['userfile']['tmp_name'], $newname) !== false) {
+          $result = 'Success';
+          $url = $this->baseUrl."/$newname";
+        }
       }
     }
     $this->sendHeaders();
