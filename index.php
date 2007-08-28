@@ -14,13 +14,11 @@ if (strtolower($l->activePage) == 'search') {
 }
 $params = "'$mainURI', 5000, $params_readonly, $params_query";
 
-$title = 'the <em>#burningsoda</em> liki';
-
 $l->sendHeaders();
 ?>
 <html>
  <head>
-  <title>liki: <?php echo $l->activePage;?></title>
+  <title><?=htmlspecialchars($l->likiTitle)?>: <?=htmlspecialchars($l->activePage)?></title>
   <?php if (!$l->legacyMode) { ?><script type="text/javascript" src="<?php echo $l->baseUrl;?>/bs_liki.js"></script><?php } ?>
   <link rel="stylesheet" type="text/css" href="<?php echo $l->baseUrl;?>/liki.css" />
   <link rel="icon" href="favicon.ico" type="image/ico" />
@@ -28,7 +26,7 @@ $l->sendHeaders();
   <link rel="alternate" type="application/rss+xml" title="RSS" href="<?php echo $l->baseUrl;?>/?action=feed" />
  </head>
  <body id="mainbody"<?php if (!$l->legacyMode) { ?> onLoad="initLiki(<?=$params?>)"<?php } ?>>
-  <a accessKey="f" href="<?php echo $l->baseUrl;?>/frontpage" id="likititle"><?=$title?></a>
+  <a accessKey="f" href="<?php echo $l->baseUrl;?>/frontpage" id="likititle"><?=htmlspecialchars($l->likiTitle)?></a>
 <?php if (!$l->legacyMode) { ?>
   <div id="toolbar">
    <?php if (session_id()) { ?><a id="logoutbutton" accessKey="o" href="<?php echo $l->baseUrl;?>/?logout">log <u>o</u>ut</a> |<?php } ?>

@@ -13,6 +13,7 @@ class bsLiki {
   var $password = '';
   var $dataDir = 'data';
   var $maximalPictureWidth = false;
+  var $likiTitle = 'The Liki';
 
   function sendHeaders() {
     header("Content-type: text/html; charset=UTF-8");
@@ -95,9 +96,9 @@ class bsLiki {
     echo '<' . '?' .'xml version="1.0" encoding="UTF-8"' . '?' . '>' . "\n";
     echo '<rss version="2.0">' . "\n";
     echo " <channel>\n";
-    echo "  <title>liki changelog</title>\n";
+    echo "  <title>Changelog for &#x201c;{$this->likiTitle}&#x201d;</title>\n";
     echo "  <link>".htmlspecialchars($this->baseUrl, ENT_QUOTES)."</link>\n";
-    //echo "  <description>$desc</description>\n";
+    echo "  <description>An automatic log of changes to the Liki.</description>\n";
     //echo "  <language>$lang</language>\n";
     //echo "  <copyright>$copyright</copyright>\n";
     //echo "  <pubDate>$pubDate</pubDate>\n";

@@ -18,4 +18,7 @@ $this->db_database = 'my_db_name';
 $this->db_user = 'db_username';
 $this->db_password = 'db_passwort';
 $this->db_table = 'myveryownprivateliki';
+
+$this->maximumPictureWidth = 600;
+$this->likiTitle = 'My Liki';
 ?>
