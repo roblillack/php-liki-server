@@ -25,6 +25,7 @@ $l->sendHeaders();
   <link rel="stylesheet" type="text/css" href="<?php echo $l->baseUrl;?>/liki.css" />
   <link rel="icon" href="favicon.ico" type="image/ico" />
   <link rel="Shortcut Icon" type="image/x-icon" href="<?php echo $l->baseUrl;?>/favicon.ico" />
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="<?php echo $l->baseUrl;?>/?action=feed" />
  </head>
  <body id="mainbody"<?php if (!$l->legacyMode) { ?> onLoad="initLiki(<?=$params?>)"<?php } ?>>
   <a accessKey="f" href="<?php echo $l->baseUrl;?>/frontpage" id="likititle"><?=$title?></a>
