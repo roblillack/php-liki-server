@@ -90,6 +90,66 @@ class bsLiki {
     return true;
   }
 
+  function sendRSSFeed() {
+    header('Content-type: application/rss+xml; charset=UTF-8');
+    echo '<' . '?' .'xml version="1.0" encoding="UTF-8"' . '?' . '>' . "\n";
+    echo '<rss version="2.0">' . "\n";
+    echo " <channel>\n";
+    echo "  <title>liki changelog</title>\n";
+    echo "  <link>".htmlspecialchars($this->baseUrl, ENT_QUOTES)."</link>\n";
+    echo "  <description>$desc</description>\n";
+    echo "  <language>$lang</language>\n";
+    echo "  <copyright>$copyright</copyright>\n";
+    echo "  <pubDate>$pubDate</pubDate>\n";
+    if ($log = $this->backend->getDetailedChangeLog(30)) foreach ($log as $e) {
+      $changelog = "";
+      $linesDeleted = 0;
+      $linesInserted = 0;
+      $linediff = diff(explode("\n", $e['content_before']), explode("\n", $e['content_after']));
+      foreach ($linediff as $number => $changeset) {
+        if (!is_array($changeset)) continue;
+        $before = !empty($changeset['d']) ? str_replace("\n", "&#x23ce;<br />\n", htmlspecialchars(implode("\n", $changeset['d']))) : "";
+        $after = !empty($changeset['i']) ? str_replace("\n", "&#x23ce;<br />\n", htmlspecialchars(implode("\n", $changeset['i']))) : "";
+        $linesDeleted += count($changeset['d']);
+        $linesInserted += count($changeset['i']);
+        $paragraph = "";
+        foreach (diff(explode(" ", $before), explode(" ", $after)) as $d) {
+          if (is_array($d)) {
+            $paragraph .= !empty($d['d']) ? "<s style='background-color:#fdd;'>" . implode(' ', $d['d']) . "</s> " : '';
+            $paragraph .= !empty($d['i']) ? "<b style='background-color:#dfd;'>" . implode(' ', $d['i']) . "</b> " : '';
+          } else {
+            $paragraph .= $d . ' ';
+          }
+        }
+        if (trim($paragraph) != "") {
+          for ($i = 3; $i >= 1; $i--) {
+            if (array_key_exists($number - $i, $linediff) && !is_array($linediff[$number - $i])) {
+              $paragraph = htmlspecialchars($linediff[$number-$i])."<br />$paragraph";
+            }
+          }
+          for ($i = 1; $i <= 3; $i++) {
+            if (array_key_exists($number + $i, $linediff) && !is_array($linediff[$number+$i])) {
+              $paragraph .= "<br />" . htmlspecialchars($linediff[$number+$i]);
+            }
+          }
+          $changelog .= "<p>$paragraph</p>\n";
+        }
+      }
+      if ($changelog) {
+        echo "  <item>\n";
+        echo "   <title>" . htmlspecialchars($e['name']. " (-$linesDeleted +$linesInserted)") . "</title>\n";
+        echo "   <description><![CDATA[$changelog]]></description>\n";
+        echo "   <author>Anonymous</author>\n";
+        echo "   <guid isPermaLink='false'>" . md5($e['timestamp_start'].$e['timestamp_end'].$e['name']) . "</guid>\n";
+        echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
+        echo "   <pubDate>" . date("r", $e['timestamp_end']) . "</pubDate>\n";
+        echo "  </item>\n";
+      }
+    }
+    echo '</rss>' . "\n";
+  }
+
+
   function createIndexPage() {
     $index = "# Liki Pages sorted alphabetically\n".
              "switch to [TimeIndex] or [PictureIndex].\n";
@@ -522,6 +582,12 @@ class bsLiki {
         $this->quit();
       }
     }
+
+    if ($this->getRequest('action') == 'feed') {
+      $this->backend = new bsLikiBackend();
+      $this->sendRSSFeed();
+      exit;
+    }
     
     $this->activePage = $this->getRequest('page', false);
     if (!$this->isLegitPageName($this->activePage) || $this->activePage == "") {
@@ -628,4 +694,28 @@ class bsLiki {
     }
   }
 }
+
+function diff($old, $new){
+  /* Paul's Simple Diff Algorithm v 0.1
+     (C) Paul Butler 2007 <http://www.paulbutler.org/>
+     May be used and distributed under the zlib/libpng license. */
+  foreach($old as $oindex => $ovalue){
+    $nkeys = array_keys($new, $ovalue);
+    foreach($nkeys as $nindex){
+      $matrix[$oindex][$nindex] = isset($matrix[$oindex - 1][$nindex - 1]) ?
+        $matrix[$oindex - 1][$nindex - 1] + 1 : 1;
+      if($matrix[$oindex][$nindex] > $maxlen){
+        $maxlen = $matrix[$oindex][$nindex];
+        $omax = $oindex + 1 - $maxlen;
+        $nmax = $nindex + 1 - $maxlen;
+      }
+    }       
+  }
+  if($maxlen == 0) return array(array('d'=>$old, 'i'=>$new));
+  return array_merge(
+      diff(array_slice($old, 0, $omax), array_slice($new, 0, $nmax)),
+      array_slice($new, $nmax, $maxlen),
+      diff(array_slice($old, $omax + $maxlen), array_slice($new, $nmax + $maxlen)));
+} 
+
 ?>

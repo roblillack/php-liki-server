@@ -145,6 +145,28 @@ class bsLikiBackend {
       return true;
     }
   }
+  
+  function getDetailedChangeLog($count = 10) {
+    $after = "IFNULL((SELECT content FROM `{$this->db_table}_backup` AS C ".
+             "WHERE C.id > A.id AND C.name = A.name ORDER BY C.id LIMIT 1), ".
+             "(SELECT content FROM `{$this->db_table}` AS D WHERE D.name = A.name LIMIT 1))";
+    $q = "SELECT $after AS `content_after`, ".
+         "A.content AS `content_before`, ".
+         "A.timestamp_opened AS timestamp_start, ".
+         "A.timestamp_closed AS timestamp_end, ".
+         "B.name AS name ".
+         "FROM `{$this->db_table}_backup` AS A,`{$this->db_table}` AS B ".
+         "WHERE A.name = B.name AND A.timestamp_closed>0 ".
+         "ORDER BY A.timestamp_closed DESC ".
+         "LIMIT $count";
+    if (!($res = mysql_query($q, $this->dbh))) return false;
+    $list = array();
+    while ($r = mysql_fetch_assoc($res)) {
+      $list[] = $r;
+    }
+    mysql_free_result($res);
+    return $list;
+  }
 
   function getRecentChanges($count = 10, $column = 'timestamp_change') {
     $changes = "";
