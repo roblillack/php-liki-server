@@ -103,6 +103,9 @@ class bsLikiBackend {
     mysql_query("UPDATE `$table`,`$backup` SET `$backup`.timestamp_closed=$timestamp ".
                 "WHERE `$backup`.timestamp_closed=0 AND `$table`.name LIKE `$backup`.name AND ".
                 "`$table`.lockkey=''", $this->dbh);
+    // delete closed revisions with NO changes
+    mysql_query("DELETE A FROM `$backup` AS A, `$backup` AS B WHERE A.name=B.name AND A.content=B.content AND A.id>B.id AND A.timestamp_closed>0", $this->dbh);
+    return true;
   }
 
   function lockPage($page, $key) {
