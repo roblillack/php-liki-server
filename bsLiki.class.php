@@ -97,10 +97,10 @@ class bsLiki {
     echo " <channel>\n";
     echo "  <title>liki changelog</title>\n";
     echo "  <link>".htmlspecialchars($this->baseUrl, ENT_QUOTES)."</link>\n";
-    echo "  <description>$desc</description>\n";
-    echo "  <language>$lang</language>\n";
-    echo "  <copyright>$copyright</copyright>\n";
-    echo "  <pubDate>$pubDate</pubDate>\n";
+    //echo "  <description>$desc</description>\n";
+    //echo "  <language>$lang</language>\n";
+    //echo "  <copyright>$copyright</copyright>\n";
+    //echo "  <pubDate>$pubDate</pubDate>\n";
     if ($log = $this->backend->getDetailedChangeLog(30)) foreach ($log as $e) {
       $changelog = "";
       $linesDeleted = 0;
@@ -139,13 +139,14 @@ class bsLiki {
         echo "  <item>\n";
         echo "   <title>" . htmlspecialchars($e['name']. " (-$linesDeleted +$linesInserted)") . "</title>\n";
         echo "   <description><![CDATA[$changelog]]></description>\n";
-        echo "   <author>Anonymous</author>\n";
+        //echo "   <author>Anonymous</author>\n";
         echo "   <guid isPermaLink='false'>" . md5($e['timestamp_start'].$e['timestamp_end'].$e['name']) . "</guid>\n";
         echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
         echo "   <pubDate>" . date("r", $e['timestamp_end']) . "</pubDate>\n";
         echo "  </item>\n";
       }
     }
+    echo ' </channel>' . "\n";
     echo '</rss>' . "\n";
   }
 
