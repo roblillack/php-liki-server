@@ -23,29 +23,49 @@ class bsLikiBackend {
       $this->dbh = $handle_;
     }
 
-    if (!$this->tablePresent()) {
-      trigger_error('creating table: '.$this->db_table);
-      $this->createTable() or die('could not create table '.$this->db_table);
+    if (!$this->tablePresent($this->db_table, array('name', 'content', 'lockkey',
+                             'timestamp_change', 'timestamp_lock', 'timestamp_visit'))) {
+      $query = "CREATE TABLE `".$this->db_table."` (".
+               " name             varchar(100)     NOT NULL default '',".
+               " content          text             default NULL,".
+               " lockkey          varchar(32)      default NULL,".
+               " timestamp_visit  int(10) unsigned NOT NULL default 0,".
+               " timestamp_change int(10) unsigned NOT NULL default 0,".
+               " timestamp_lock   int(10) unsigned NOT NULL default 0,".
+               " PRIMARY KEY(name)".
+               ")";
+      @mysql_query($query, $this->dbh) or die('could not create table '.$this->db_table);
+    }
+    if (!$this->tablePresent($this->db_table.'_backup',
+                             array('id', 'name', 'content',
+                                   'timestamp_opened', 'timestamp_closed'))) {
+      $query = "CREATE TABLE `".$this->db_table."_backup` (".
+               " id               int(10) unsigned NOT NULL auto_increment,".
+               " name             varchar(100)     NOT NULL default '',".
+               " content          text             default NULL,".
+               " timestamp_opened int(10) unsigned NOT NULL default 0,".
+               " timestamp_closed int(10) unsigned NOT NULL default 0,".
+               " PRIMARY KEY(id)".
+               ")";
+      @mysql_query($query, $this->dbh) or die('could not create table '.$this->db_table."_backup");
     }
   }
 
-  function tablePresent() {
-    $res = mysql_query('DESC '.$this->db_table, $this->dbh);
+  function tablePresent($tablename, $columns) {
+    $res = @mysql_query('DESC `'.$tablename.'`', $this->dbh);
     if ($res) {
-      if (mysql_num_rows($res) >= 6) {
+      if (mysql_num_rows($res) >= count($columns)) {
         $cols = array();
         for ($i = 0; $i < mysql_num_rows($res); $i ++) {
           $row = mysql_fetch_array($res);
           $cols[] = $row[0];
         }
         mysql_free_result($res);
-        foreach(array('name', 'content', 'lockkey',
-                      'timestamp_change', 'timestamp_lock',
-                      'timestamp_visit') as $col) {
+        foreach($columns as $col) {
           if (!in_array($col, $cols)) die("column $col missing");
         }
       } else {
-        die('not enough columns. table layout changed?');
+        die("not enough columns in $tablename. table layout changed?");
       }
     } else {
       return false;
@@ -73,9 +93,16 @@ class bsLikiBackend {
   function autoFree($page) {
     $page = $this->cleanPageName($page);
     $timestamp = time();
-    return mysql_query("UPDATE `".$this->db_table."` SET lockkey='' WHERE ".
-                       "(timestamp_lock < $timestamp - 180) AND ".
-                       "name LIKE '$page'", $this->dbh);
+    $table = $this->db_table;
+    $backup = $table.'_backup';
+    // unlock pages
+    mysql_query("UPDATE `$table` SET lockkey='' WHERE ".
+                "(timestamp_lock < $timestamp - 180) AND ".
+                "name LIKE '$page'", $this->dbh);
+    // close revision of non locked pages
+    mysql_query("UPDATE `$table`,`$backup` SET `$backup`.timestamp_closed=$timestamp ".
+                "WHERE `$backup`.timestamp_closed=0 AND `$table`.name LIKE `$backup`.name AND ".
+                "`$table`.lockkey=''", $this->dbh);
   }
 
   function lockPage($page, $key) {
@@ -91,10 +118,17 @@ class bsLikiBackend {
     if (mysql_affected_rows($this->dbh) != 1) {
       /** if updating failed, the page needs to be created
           (were being atomic here, so no select) */
+      mysql_query('INSERT INTO `'.$this->db_table."_backup`".
+                  "(name, timestamp_opened) ".
+                  "VALUES ('$page', $timestamp)", $this->dbh);
       return mysql_query('INSERT INTO `'.$this->db_table."`".
                          "(name, timestamp_lock, lockkey) ".
                          "VALUES ('$page', $timestamp, '$key')", $this->dbh);
     } else {
+      // the page exists. create a new backup revision
+      mysql_query('INSERT INTO `'.$this->db_table.'_backup` (name,timestamp_opened,content) '.
+                  "SELECT name,timestamp_lock AS timestamp_opened,content FROM `".$this->db_table."` ".
+                  "WHERE name LIKE '$page' AND lockkey='$key'", $this->dbh);
       return true;
     }
   }
