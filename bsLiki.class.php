@@ -92,7 +92,7 @@ class bsLiki {
   }
 
   function sendRSSFeed() {
-    header('Content-type: application/rss+xml; charset=UTF-8');
+    header('Content-type: text/xml; charset=UTF-8');
     echo '<' . '?' .'xml version="1.0" encoding="UTF-8"' . '?' . '>' . "\n";
     echo '<rss version="2.0">' . "\n";
     echo " <channel>\n";
