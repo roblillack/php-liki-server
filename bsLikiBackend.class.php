@@ -96,8 +96,8 @@ class bsLikiBackend {
     $backup = $table.'_backup';
     // unlock pages
     mysql_query("UPDATE `$table` SET lockkey='' WHERE ".
-                "(timestamp_lock < $timestamp - 180)", $this->dbh);
-    // close revision of non locked pages
+                "(timestamp_lock < $timestamp - 180) AND lockkey != ''", $this->dbh);
+    // close revision of non locked pages (race condition here)
     mysql_query("UPDATE `$table`,`$backup` SET `$backup`.timestamp_closed=$timestamp ".
                 "WHERE `$backup`.timestamp_closed=0 AND `$table`.name=`$backup`.name AND ".
                 "`$table`.lockkey=''", $this->dbh);
@@ -142,8 +142,10 @@ class bsLikiBackend {
     $timestamp = time();
     $table = '`'.$this->db_table.'`';
     $backup =  '`'.$this->db_table.'_backup`';
-    mysql_query("UPDATE $table AS A, $backup AS B SET A.lockkey='', B.timestamp_closed=$timestamp WHERE ".
-                "A.lockkey='$key' AND A.name='$page' AND B.name='$page' AND B.timestamp_closed=0", $this->dbh);
+    // close backup revision as long, as we're still locked
+    mysql_query("UPDATE $table, $backup SET $backup.timestamp_closed=$timestamp WHERE ".
+                "$table.lockkey='$key' AND $table.name=$backup.name AND $table.name='$page'", $this->dbh);
+    mysql_query("UPDATE $table SET lockkey='' WHERE lockkey='$key' AND name='$page'", $this->dbh);
     if (mysql_affected_rows($this->dbh) != 1) {
       return false;
     } else {
