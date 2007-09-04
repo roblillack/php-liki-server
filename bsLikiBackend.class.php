@@ -143,7 +143,7 @@ class bsLikiBackend {
     $table = '`'.$this->db_table.'`';
     $backup =  '`'.$this->db_table.'_backup`';
     mysql_query("UPDATE $table AS A, $backup AS B SET A.lockkey='', B.timestamp_closed=$timestamp WHERE ".
-                "A.lockkey='$key' AND A.name='$page' AND B.name='$page'", $this->dbh);
+                "A.lockkey='$key' AND A.name='$page' AND B.name='$page' AND B.timestamp_closed=0", $this->dbh);
     if (mysql_affected_rows($this->dbh) != 1) {
       return false;
     } else {
