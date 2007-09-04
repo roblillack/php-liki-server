@@ -90,26 +90,26 @@ class bsLikiBackend {
     return preg_replace('[\'\"\]\[\%\s]', '', $name);
   }
 
-  function autoFree($page) {
-    $page = $this->cleanPageName($page);
+  function autoFree() {
     $timestamp = time();
     $table = $this->db_table;
     $backup = $table.'_backup';
     // unlock pages
     mysql_query("UPDATE `$table` SET lockkey='' WHERE ".
-                "(timestamp_lock < $timestamp - 180) AND ".
-                "name LIKE '$page'", $this->dbh);
+                "(timestamp_lock < $timestamp - 180)", $this->dbh);
     // close revision of non locked pages
     mysql_query("UPDATE `$table`,`$backup` SET `$backup`.timestamp_closed=$timestamp ".
-                "WHERE `$backup`.timestamp_closed=0 AND `$table`.name LIKE `$backup`.name AND ".
+                "WHERE `$backup`.timestamp_closed=0 AND `$table`.name=`$backup`.name AND ".
                 "`$table`.lockkey=''", $this->dbh);
+    // delete b0rked revisions with NULL content
+    mysql_query("DELETE FROM `$backup` WHERE timestamp_closed > 0 AND ISNULL(content)", $this->dbh);
     // delete closed revisions with NO changes
     mysql_query("DELETE A FROM `$backup` AS A, `$backup` AS B WHERE A.name=B.name AND A.content=B.content AND A.id>B.id AND A.timestamp_closed>0", $this->dbh);
     return true;
   }
 
   function lockPage($page, $key) {
-    $this->autoFree($page);
+    $this->autoFree();
     $timestamp = time();
     $key = addslashes($key);
     $page = $this->cleanPageName($page);
@@ -140,8 +140,10 @@ class bsLikiBackend {
     $page = $this->cleanPageName($page);
     $key = addslashes($key);
     $timestamp = time();
-    mysql_query("UPDATE `".$this->db_table."` SET lockkey='' WHERE ".
-                "lockkey='$key' AND name LIKE '$page'", $this->dbh);
+    $table = '`'.$this->db_table.'`';
+    $backup =  '`'.$this->db_table.'_backup`';
+    mysql_query("UPDATE $table AS A, $backup AS B SET A.lockkey='', B.timestamp_closed=$timestamp WHERE ".
+                "A.lockkey='$key' AND A.name='$page' AND B.name='$page'", $this->dbh);
     if (mysql_affected_rows($this->dbh) != 1) {
       return false;
     } else {
@@ -150,6 +152,7 @@ class bsLikiBackend {
   }
   
   function getDetailedChangeLog($count = 10) {
+    $this->autoFree();
     $after = "IFNULL((SELECT content FROM `{$this->db_table}_backup` AS C ".
              "WHERE C.id > A.id AND C.name = A.name ORDER BY C.id LIMIT 1), ".
              "(SELECT content FROM `{$this->db_table}` AS D WHERE D.name = A.name LIMIT 1))";
@@ -266,7 +269,7 @@ class bsLikiBackend {
   }
   
   function getPage($page) {
-    $this->autoFree($page);
+    $this->autoFree();
     $page = $this->cleanPageName($page);
     $res = mysql_query("SELECT * FROM `" .$this->db_table. "` ".
                        "WHERE name LIKE '$page'");
@@ -286,7 +289,7 @@ class bsLikiBackend {
   }
   
   function getTimestamp($page) {
-    $this->autoFree($page);
+    $this->autoFree();
     $page = $this->cleanPageName($page);
     $res = mysql_query("SELECT timestamp_change FROM `" .$this->db_table. "` ".
                        "WHERE name LIKE '$page'");
@@ -306,7 +309,7 @@ class bsLikiBackend {
   function updatePage($page, $key, $content) {
     $key = addslashes($key);
     $page = $this->cleanPageName($page);
-    $this->autoFree($page);
+    $this->autoFree();
     $p = $this->getPage($page);
     if ($p === false) return false;
     if ($p['content'] == $content) {
