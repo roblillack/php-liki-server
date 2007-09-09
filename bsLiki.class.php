@@ -141,9 +141,9 @@ class bsLiki {
         echo "   <title>" . htmlspecialchars($e['name']. " (-$linesDeleted +$linesInserted)") . "</title>\n";
         echo "   <description><![CDATA[$changelog]]></description>\n";
         //echo "   <author>Anonymous</author>\n";
-        echo "   <guid isPermaLink='false'>" . md5($e['timestamp_start'].$e['timestamp_end'].$e['name']) . "</guid>\n";
+        echo "   <guid isPermaLink='false'>" . md5($e['timestamp'].$e['name']) . "</guid>\n";
         echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
-        echo "   <pubDate>" . date("r", $e['timestamp_end']) . "</pubDate>\n";
+        echo "   <pubDate>" . date("r", $e['timestamp']) . "</pubDate>\n";
         echo "  </item>\n";
       }
     }
@@ -701,6 +701,7 @@ function diff($old, $new){
   /* Paul's Simple Diff Algorithm v 0.1
      (C) Paul Butler 2007 <http://www.paulbutler.org/>
      May be used and distributed under the zlib/libpng license. */
+  $maxlen = 0;
   foreach($old as $oindex => $ovalue){
     $nkeys = array_keys($new, $ovalue);
     foreach($nkeys as $nindex){
