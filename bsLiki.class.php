@@ -588,7 +588,7 @@ class bsLiki {
     if ($this->getRequest('action') == 'feed') {
       $this->backend = new bsLikiBackend();
       $this->sendRSSFeed();
-      exit;
+      $this->quit();
     }
     
     $this->activePage = $this->getRequest('page', false);
