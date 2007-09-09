@@ -118,6 +118,9 @@ class bsLikiBackend {
     $this->autoFree();
     $timestamp = time();
     $key = addslashes($key);
+    $ipArr = explode('.',$_SERVER['REMOTE_ADDR']);
+    $ip = $ipArr[0] * 0x1000000 + $ipArr[1] * 0x10000 + $ipArr[2] * 0x100 + $ipArr[3];
+    $agent = addslashes($_SERVER['HTTP_USER_AGENT']);
     $page = $this->cleanPageName($page);
     $pages = $this->tablePrefix.'pages';
     $revisions = $this->tablePrefix.'revisions';
@@ -136,7 +139,7 @@ class bsLikiBackend {
     // successfully locked page
     // now, create a new revision...
     $q = "INSERT INTO `$revisions` (page_id,content,remote_ip,remote_agent) ".
-         "SELECT page_id, content, 0 AS remote_ip, '".  addslashes($_SERVER['HTTP_USER_AGENT'])."' AS remote_agent ".
+         "SELECT page_id, content, $ip AS remote_ip, '$agent' AS remote_agent ".
          "FROM `$revisions` WHERE id=(SELECT revision_id FROM `$pages` WHERE name='$page')";
     mysql_query($q, $this->dbh);
 
