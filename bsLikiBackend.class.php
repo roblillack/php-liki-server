@@ -376,6 +376,7 @@ class bsLikiBackend {
     return false;
   }
 
+  // TODO: manually calculate sums of special pages.
   function getPageMD5($page) {
     $page = $this->cleanPageName($page);
     $q = "SELECT MD5(TRIM(content)) AS md5 FROM {$this->tablePrefix}revisions,{$this->tablePrefix}pages ".

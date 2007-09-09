@@ -651,6 +651,14 @@ class bsLiki {
       }
       echo $t;
       $this->quit();
+    } elseif ($this->getRequest('action') == 'getmd5') {
+      if ($md5 = $this->backend->getPageMD5($this->activePage)) {
+        header('Content-type: text/plain; charset=UTF-8');
+        echo $md5;
+      } else {
+        header("HTTP/1.1 400 Error getting MD5 sum of page");
+      }
+      $this->quit();
     } elseif ($this->getRequest('action') == 'freelock') {
       if (!$this->specialPage && $this->key && $this->backend->freePage($this->activePage, $this->key)) {
         header("HTTP/1.1 204 lock released");
