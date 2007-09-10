@@ -118,8 +118,7 @@ class bsLikiBackend {
     $this->autoFree();
     $timestamp = time();
     $key = addslashes($key);
-    $ipArr = explode('.',$_SERVER['REMOTE_ADDR']);
-    $ip = $ipArr[0] * 0x1000000 + $ipArr[1] * 0x10000 + $ipArr[2] * 0x100 + $ipArr[3];
+    $ip = sprintf("%u", ip2long($_SERVER['REMOTE_ADDR']));
     $agent = addslashes($_SERVER['HTTP_USER_AGENT']);
     $page = $this->cleanPageName($page);
     $pages = $this->tablePrefix.'pages';
@@ -180,6 +179,7 @@ class bsLikiBackend {
              "WHERE C.id < A.id AND C.page_id=A.page_id ORDER BY C.id DESC LIMIT 1), '')";
     $q = "SELECT content AS `content_after`, ".
          "$before AS `content_before`, ".
+         "remote_ip, remote_agent, ".
          "timestamp_change AS timestamp, ".
          "name ".
          "FROM `{$this->tablePrefix}revisions` AS A,`{$this->tablePrefix}pages` AS B ".

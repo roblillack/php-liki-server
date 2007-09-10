@@ -140,7 +140,7 @@ class bsLiki {
         echo "  <item>\n";
         echo "   <title>" . htmlspecialchars($e['name']. " (-$linesDeleted +$linesInserted)") . "</title>\n";
         echo "   <description><![CDATA[$changelog]]></description>\n";
-        //echo "   <author>Anonymous</author>\n";
+        echo "   <author>" .htmlspecialchars(long2ip($e['remote_ip'])). "</author>\n";
         echo "   <guid isPermaLink='false'>" . md5($e['timestamp'].$e['name']) . "</guid>\n";
         echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
         echo "   <pubDate>" . date("r", $e['timestamp']) . "</pubDate>\n";
