@@ -102,15 +102,22 @@ class bsLikiBackend {
     // unlock pages
     mysql_query("UPDATE `$pages` SET lockkey='' WHERE ".
                 "(timestamp_lock < $timestamp - 180) AND lockkey != ''", $this->dbh);
-    //mysql_query("UPDATE `$pages` SET revision_id=(SELECT MAX(id) FROM `$revisions` WHERE timestamp_change IS NOT NULL
-    // close revision of non locked pages (race condition here)
-    //mysql_query("UPDATE `$table`,`$backup` SET `$backup`.timestamp_closed=$timestamp ".
-    //            "WHERE `$backup`.timestamp_closed=0 AND `$table`.name=`$backup`.name AND ".
-    //            "`$table`.lockkey=''", $this->dbh);
-    // delete b0rked revisions with NULL content
-    //mysql_query("DELETE FROM `$backup` WHERE timestamp_closed > 0 AND ISNULL(content)", $this->dbh);
-    // delete closed revisions with NO changes
-    //mysql_query("DELETE A FROM `$table` AS A WHERE A.name=B.name AND A.content=B.content AND A.id>B.id AND A.timestamp_closed>0", $this->dbh);
+
+    // this finds the next older revisions that is not empty
+    $oldrev = "SELECT id FROM `$revisions` AS o ".
+              "WHERE o.id < r.id AND o.page_id=p.id AND o.timestamp_change IS NOT NULL ".
+              "ORDER BY o.id DESC LIMIT 1";
+    // this finds the oldest one (regardless if it is empty)
+    $oldest = "SELECT MIN(id) FROM `$revisions` AS oldest WHERE oldest.page_id=p.id";
+    // now, reset reverences to empty revisions to the next older non-empty one (or the oldest one)
+    mysql_query("UPDATE `$pages` AS p, `$revisions` as r SET p.revision_id=IFNULL(($oldrev),($oldest)) ".
+                "WHERE p.revision_id=r.id AND (p.lockkey='' OR p.lockkey IS NULL) AND r.timestamp_change IS NULL",
+                $this->dbh);
+    // delete empty revisions
+    mysql_query("DELETE r FROM `$revisions` AS r, `$pages` AS p ".
+                "WHERE r.page_id = p.id AND p.revision_id != r.id AND r.timestamp_change IS NULL",
+                $this->dbh);
+
     return true;
   }
 
