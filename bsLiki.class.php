@@ -140,12 +140,16 @@ class bsLiki {
         echo "  <item>\n";
         echo "   <title>" . htmlspecialchars($e['name']. " (-$linesDeleted +$linesInserted)") . "</title>\n";
         echo "   <description><![CDATA[$changelog]]></description>\n";
-        echo "   <author>" .htmlspecialchars(long2ip($e['remote_ip'])). "</author>\n";
+
+        $author = encodeLongIP($e['remote_ip']);
+        echo "   <author>" .htmlspecialchars($author). "</author>\n";
         echo "   <guid isPermaLink='false'>" . md5($e['timestamp'].$e['name']) . "</guid>\n";
         echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
         echo "   <pubDate>" . date("r", $e['timestamp']) . "</pubDate>\n";
         echo "  </item>\n";
       }
+
+      flush();
     }
     echo ' </channel>' . "\n";
     echo '</rss>' . "\n";
@@ -728,5 +732,19 @@ function diff($old, $new){
       array_slice($new, $nmax, $maxlen),
       diff(array_slice($old, $omax + $maxlen), array_slice($new, $nmax + $maxlen)));
 } 
+
+function encodeLongIP($ip) {
+  if ($ip == 0) return "unknown";
+
+  $host = gethostbyaddr(long2ip($ip));
+  $hostarray = explode('.', $host);
+  if ($ip == $host) {
+    $hostarray[3] = "~".substr(md5($ip), -8);
+  } else {
+    $hostarray[0] = "~".substr(md5($ip), -8);
+  }
+
+  return implode('.', $hostarray);
+}
 
 ?>
