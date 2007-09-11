@@ -188,7 +188,7 @@ class bsLikiBackend {
          "$before AS `content_before`, ".
          "remote_ip, remote_agent, ".
          "timestamp_change AS timestamp, ".
-         "name ".
+         "name, A.id AS revision_id ".
          "FROM `{$this->tablePrefix}revisions` AS A,`{$this->tablePrefix}pages` AS B ".
          "WHERE A.page_id=B.id AND A.timestamp_change IS NOT NULL ".
          "ORDER BY A.timestamp_change DESC ".

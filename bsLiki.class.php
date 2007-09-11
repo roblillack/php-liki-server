@@ -145,7 +145,7 @@ class bsLiki {
 
         $author = encodeLongIP($e['remote_ip']);
         echo "   <author>" .htmlspecialchars($author). "</author>\n";
-        echo "   <guid isPermaLink='false'>" . md5($e['timestamp'].$e['name']) . "</guid>\n";
+        echo "   <guid isPermaLink='true'>" . htmlspecialchars($this->baseUrl.'/permalink/'.$e['revision_id']) . "</guid>\n";
         echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
         echo "   <pubDate>" . date("r", $e['timestamp']) . "</pubDate>\n";
         echo "  </item>\n";
