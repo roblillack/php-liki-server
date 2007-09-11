@@ -325,6 +325,27 @@ class bsLikiBackend {
     }
   }
   
+  function getRevision($rev) {
+    $this->autoFree();
+    $p = "`{$this->tablePrefix}pages`";
+    $r = "`{$this->tablePrefix}revisions`";
+    $res = mysql_query("SELECT content,timestamp_change FROM $r ".
+                       "WHERE id=$rev");
+    if (!$res) {
+      trigger_error("could not get content of page $page");
+      return false;
+    }
+    if (mysql_num_rows($res) != 1) {
+      // page does not exist
+      return array('name'             => $page,
+                   'content'          => '',
+                   'timestamp_change' => 1);
+    }
+    $r = mysql_fetch_assoc($res);
+    mysql_free_result($res);
+    return $r;
+  }
+   
   function getPage($page) {
     $this->autoFree();
     $page = $this->cleanPageName($page);

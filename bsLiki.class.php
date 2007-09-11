@@ -7,6 +7,8 @@ class bsLiki {
   var $activePage = false;
   var $specialPage = false;
   var $legacyMode = false;
+  var $permalinkMode = false;
+  var $permalinkRevision = 0;
   var $key = false;
   var $passwordProtected = false;
   var $username = '';
@@ -292,7 +294,12 @@ class bsLiki {
 
   function getFormattedPage($page) {
     $page = $this->getPage($page);
-    $p = $page['content'];
+    $page['content'] = $this->formatContent($page['content']);
+    return $page;
+  }
+
+  function formatContent($content) {
+    $p = $content;
 
     // one line paragraphs (i.e. section headings)
     $p = preg_replace('/(^|\n)([\#\*])\ ([^\n]+)/', "$1\n$2 $3\n", $p);
@@ -367,8 +374,7 @@ class bsLiki {
       }
     }
 
-    $page['content'] = $output;
-    return $page;
+    return $output;
   }
 
   function sendUploadForm() {
@@ -593,13 +599,24 @@ class bsLiki {
       $this->backend = new bsLikiBackend();
       $this->sendRSSFeed();
       $this->quit();
+    } elseif ($this->getRequest('action') == 'permalink') {
+      $this->activePage = '';
+      $this->permalinkMode = true;
+      $this->permalinkRevision = $this->getRequest('revision');
+      /*$this->backend = new bsLikiBackend();
+      $this->sendRecentChangesHeader();
+      header('Content-type: text/html; charset=UTF-8');
+      //echo "<head><title>".$this->getRequest('revision')."</title></head>\n";
+      $page = $this->backend->getRevision($this->getRequest('revision'));
+      echo $this->formatPage($page['content']);
+      $this->quit();*/
+    } else {
+      $this->activePage = $this->getRequest('page', false);
+      if (!$this->isLegitPageName($this->activePage) || $this->activePage == "") {
+        header('Location: '.$this->baseUrl.'/frontpage');
+        $this->quit();
+      }
     }
-    
-    $this->activePage = $this->getRequest('page', false);
-    if (!$this->isLegitPageName($this->activePage) || $this->activePage == "") {
-      header('Location: '.$this->baseUrl.'/frontpage');
-      $this->quit();
-    };
 
     $this->key = $this->getRequest('key', false);
     if (strlen($this->key) != 32) $this->key = false;

@@ -25,9 +25,19 @@ $l->sendHeaders();
   <link rel="Shortcut Icon" type="image/x-icon" href="<?php echo $l->baseUrl;?>/favicon.ico" />
   <link rel="alternate" type="application/rss+xml" title="RSS" href="<?php echo $l->baseUrl;?>/?action=feed" />
  </head>
- <body id="mainbody"<?php if (!$l->legacyMode) { ?> onLoad="initLiki(<?=$params?>)"<?php } ?>>
+ <body id="mainbody"<?php if (!$l->legacyMode && !$l->permalinkMode) { ?> onLoad="initLiki(<?=$params?>)"<?php } ?>>
   <a accessKey="f" href="<?php echo $l->baseUrl;?>/frontpage" id="likititle"><?=htmlspecialchars($l->likiTitle)?></a>
-<?php if (!$l->legacyMode) { ?>
+<?php if ($l->legacyMode || $l->permalinkMode) {
+  echo '<div style="visibility: visible;" id="viewcontent">';
+  if ($l->permalinkMode) {
+    $p = $l->backend->getRevision($l->permalinkRevision);
+    echo $l->formatContent($p['content']);
+  } else {
+    $p = $l->getFormattedPage($l->activePage);
+    echo $p['content'];
+  }
+  echo "</div>\n";
+} else {?>
   <div id="toolbar">
    <?php if (session_id()) { ?><a id="logoutbutton" accessKey="o" href="<?php echo $l->baseUrl;?>/?logout">log <u>o</u>ut</a> |<?php } ?>
    <span id="uploadbutton"><a accessKey="p" href="javascript:clickUploadButton()">insert <u>p</u>icture</a> |</span>
@@ -48,14 +58,7 @@ $l->sendHeaders();
   <div id='viewcontent'></div>
   <div id='status'></div>
   <iframe id="uploadiframe" src="<?php echo $l->baseUrl;?>/<?php echo $l->activePage;?>?action=uploadform" />
-<?php
-} else {
-  echo '<div style="visibility: visible;" id="viewcontent">';
-  $p = $l->getFormattedPage($l->activePage);
-  echo $p['content'];
-  echo "</div>\n";
-}
-?>
+<?php } ?>
  </body>
 </html>
 <?php
