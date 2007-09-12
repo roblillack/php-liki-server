@@ -94,6 +94,8 @@ class bsLiki {
   }
 
   function sendRSSFeed() {
+    // still does not work with splitting at every char, because of encoding trouble :(
+    $splitAtSpaces = true;
     header('Content-type: text/xml; charset=UTF-8');
     echo '<' . '?' .'xml version="1.0" encoding="UTF-8"' . '?' . '>' . "\n";
     echo '<rss version="2.0">' . "\n";
@@ -106,6 +108,7 @@ class bsLiki {
     //echo "  <pubDate>$pubDate</pubDate>\n";
     if ($log = $this->backend->getDetailedChangeLog(30)) foreach ($log as $e) {
       $changelog = "";
+      $linesModified = 0;
       $linesDeleted = 0;
       $linesInserted = 0;
       $linediff = diff(explode("\n", $e['content_before']), explode("\n", $e['content_after']));
@@ -113,15 +116,26 @@ class bsLiki {
         if (!is_array($changeset)) continue;
         $before = !empty($changeset['d']) ? str_replace("\n", "&#x23ce;<br />\n", htmlspecialchars(implode("\n", $changeset['d']))) : "";
         $after = !empty($changeset['i']) ? str_replace("\n", "&#x23ce;<br />\n", htmlspecialchars(implode("\n", $changeset['i']))) : "";
-        $linesDeleted += count($changeset['d']);
-        $linesInserted += count($changeset['i']);
+        $mod = min(count($changeset['d']), count($changeset['i']));
+        $linesDeleted += count($changeset['d']) - $mod;
+        $linesInserted += count($changeset['i']) - $mod;
+        $linesModified += $mod;
         $paragraph = "";
-        foreach (diff(explode(" ", $before), explode(" ", $after)) as $d) {
+        if ($splitAtSpaces) {
+          $before_array = explode(" ", $before);
+          $after_array = explode(" ", $after);
+          $splitChar = ' ';
+        } else {
+          $before_array = preg_split('//u', $before);
+          $after_array = preg_split('//u', $after);
+          $splitChar = '';
+        }
+        foreach (diff($before_array, $after_array) as $d) {
           if (is_array($d)) {
-            $paragraph .= !empty($d['d']) ? "<s style='background-color:#fdd;'>" . implode(' ', $d['d']) . "</s> " : '';
-            $paragraph .= !empty($d['i']) ? "<b style='background-color:#dfd;'>" . implode(' ', $d['i']) . "</b> " : '';
+            $paragraph .= !empty($d['d']) ? "<s style='background-color:#fdd;'>" . implode($splitChar, $d['d']) . "</s>" . $splitChar : '';
+            $paragraph .= !empty($d['i']) ? "<b style='background-color:#dfd;'>" . implode($splitChar, $d['i']) . "</b>" . $splitChar : '';
           } else {
-            $paragraph .= $d . ' ';
+            $paragraph .= $d . $splitChar;
           }
         }
         if (trim($paragraph) != "") {
@@ -140,7 +154,7 @@ class bsLiki {
       }
       if ($changelog) {
         echo "  <item>\n";
-        echo "   <title>" . htmlspecialchars($e['name']. " (-$linesDeleted +$linesInserted)") . "</title>\n";
+        echo "   <title>" . htmlspecialchars($e['name']. " (~$linesModified -$linesDeleted +$linesInserted)") . "</title>\n";
         echo "   <description><![CDATA[$changelog]]></description>\n";
 
         $author = encodeLongIP($e['remote_ip']);
