@@ -427,12 +427,17 @@ class bsLikiBackend {
       return false;
     }
 
+    // convert windows & (old) mac newlines to unix ones:
+    $content = str_replace(array("\r\n", "\r"), "\n", $content);
+    // remove superficious spaces/lines
+    $content = trim($content);
+
     if (md5($content) == $this->getPageMD5($page)) {
       // no changes...
       return true;
     }
 
-    $content = addslashes(trim($content));
+    $content = addslashes($content);
     $query = "UPDATE `{$this->tablePrefix}revisions` SET timestamp_change=".time().", content='$content' ".
              "WHERE id=(SELECT revision_id FROM `{$this->tablePrefix}pages` WHERE name='$page')";
     mysql_query($query, $this->dbh);
