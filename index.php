@@ -1,5 +1,4 @@
 <?php
-
 require('bsLiki.class.php');
 $l = new bsLiki();
 
