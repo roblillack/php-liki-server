@@ -61,16 +61,22 @@ class bsLiki {
 
   function sendRecentChangesHeader() {
     $str = "";
-    foreach ($this->backend->getRecentChanges(10) as $p) {
-      $str .= $p['name']."/".$p['howlongago'].",";
+    $changes = $this->backend->getRecentChanges(10);
+    if ($changes) {
+      foreach ($changes as $p) {
+        $str .= $p['name']."/".$p['howlongago'].",";
+      }
+      header('X-LIKI-RecentChanges: '.rawurlencode(substr($str,0,strlen($str)-1)));
     }
-    header('X-LIKI-RecentChanges: '.rawurlencode(substr($str,0,strlen($str)-1)));
   
     $str = "";
-    foreach ($this->backend->getRecentVisits(10) as $p) {
-      $str .= $p['name']."/".$p['howlongago'].",";
+    $changes = $this->backend->getRecentVisits(10);
+    if ($changes) {
+      foreach ($changes as $p) {
+        $str .= $p['name']."/".$p['howlongago'].",";
+      }
+      header('X-LIKI-RecentVisits: '.rawurlencode(substr($str,0,strlen($str)-1)));
     }
-    header('X-LIKI-RecentVisits: '.rawurlencode(substr($str,0,strlen($str)-1)));
   }
 
   function isLegitPageName($str) {
