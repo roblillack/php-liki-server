@@ -25,7 +25,7 @@ $l->sendHeaders();
   <link rel="alternate" type="application/rss+xml" title="RSS" href="<?php echo $l->baseUrl;?>/?action=feed" />
  </head>
  <body id="mainbody"<?php if (!$l->legacyMode && !$l->permalinkMode) { ?> onLoad="initLiki(<?=$params?>)"<?php } ?>>
-  <a accessKey="f" href="<?php echo $l->baseUrl;?>/frontpage" id="likititle"><?=htmlspecialchars($l->likiTitle)?></a>
+  <a accessKey="f" href="<?php echo $l->baseUrl;?>/frontpage<?php if ($l->legacyMode) echo "/legacy"; ?>" id="likititle"><?=htmlspecialchars($l->likiTitle)?></a>
 <?php if ($l->legacyMode || $l->permalinkMode) {
   echo '<div style="visibility: visible;" id="viewcontent">';
   if ($l->permalinkMode) {
@@ -51,7 +51,7 @@ $l->sendHeaders();
   </div>
   <div id="navibar">
    <form id="searchform" action="<?php echo $l->baseUrl;?>/search" method="get"><input accessKey="s" onClick="clearSearchField();" id="searchfield" type="text" value="<?=$searchfield?>" name="q" /></form>
-   <a accessKey="i" href="<?php echo $l->baseUrl;?>/INDEX"><u>i</u>ndex</a>,
+   <a accessKey="i" href="<?php echo $l->baseUrl;?>/INDEX<?php if ($l->legacyMode) echo "/legacy"; ?>"><u>i</u>ndex</a>,
    recently changed: <span id="recentchanges"></span>
   </div>
   <div id='viewcontent'></div>

@@ -289,9 +289,10 @@ class bsLiki {
     $p = preg_replace('/\[(http\:\/\/[\S]+)\]/', '<a class="external" href="$1">$1</a>', $p);
     $p = preg_replace('/\[(http\:\/\/[\S]+)\ ([\S][\S\ ]*?[\S]+)\]/', '<a class="external" href="$1">$2</a>', $p);
     // liki-seiten
-    $p = preg_replace('/\[\[?([^\'\"\]\[\%\s\/\\\\]+)\]?\]/', '<a class="internal" href="' . $this->baseUrl . '/$1">$1</a>', $p);
+    $legacy = $this->legacyMode ? "/legacy" : "";
+    $p = preg_replace('/\[\[?([^\'\"\]\[\%\s\/\\\\]+)\]?\]/', '<a class="internal" href="' . $this->baseUrl . '/$1'.$legacy.'">$1</a>', $p);
     // liki-seiten (mit text)
-    $p = preg_replace('/(^|[^\\\\])\[\[?([^\'\"\]\[\%\s\/\\\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/', '$1<a class="internal" href="' . $this->baseUrl . '/$2">$3</a>', $p);
+    $p = preg_replace('/(^|[^\\\\])\[\[?([^\'\"\]\[\%\s\/\\\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/', '$1<a class="internal" href="' . $this->baseUrl . '/$2'.$legacy.'">$3</a>', $p);
     // colors
     $p = preg_replace('/\{(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow|#[0-9a-f]{3}([0-9a-f]{3})?)\ (.*?[^\\\\])\}/i', '<span style="color:$1;">$3</span>', $p);
     // forced line breaks
