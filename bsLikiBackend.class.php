@@ -271,13 +271,12 @@ class bsLikiBackend {
          "FROM {$this->revsTable} AS A,{$this->pagesTable} AS B ".
          "WHERE A.page_id=B.id AND A.timestamp_change IS NOT NULL ".
          "ORDER BY A.timestamp_change DESC ".
-         "LIMIT ?";
-    if (!($res = $this->dbh->Execute($q, array($count)))) return false;
-    $list = array();
-    while (!$res->EOF) {
-      $list[] = $res->FetchRow();
-    }
-    $res->Close();
+         "LIMIT :count";
+    $s = $this->dbh->prepare($q);
+    $s->bindParam(':count', $count, PDO::PARAM_INT);
+    if (!$s->execute()) return false;
+    $list = $s->fetchAll();
+    $s = null;
     return $list;
   }
 
