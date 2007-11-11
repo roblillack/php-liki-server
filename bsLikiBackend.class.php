@@ -81,17 +81,24 @@ class bsLikiBackend {
     return true;
   }
 
-  function createTable() {
-    $query = "CREATE TABLE `".$this->db_table."` (".
-             " name             varchar(100)     NOT NULL default '',".
-             " content          text             default NULL,".
-             " lockkey          varchar(32)      default NULL,".
-             " timestamp_visit  int(10) unsigned NOT NULL default 0,".
-             " timestamp_change int(10) unsigned NOT NULL default 0,".
-             " timestamp_lock   int(10) unsigned NOT NULL default 0,".
-             " PRIMARY KEY(name)".
-             ")";
-    return mysql_query($query, $this->dbh);
+  function createTables() {
+    if (strncmp($this->database, "sqlite:", 7) === 0) {
+      if (!$this->dbh->exec("CREATE TABLE pages (id INTEGER PRIMARY KEY, name, lockkey, timestamp_visit INTEGER, timestamp_lock INTEGER, revision_id INTEGER, has_changes)")) {
+        $err = $this->dbh->errorInfo();
+        error_log('createTables(): Unable to create pages table: '.$err[2]);
+        return false;
+      }
+      if (!$this->dbh->exec("CREATE TABLE revisions (id INTEGER PRIMARY KEY, page_id INTEGER, timestamp_change INTEGER, content, remote_ip INTEGER, remote_agent)")) {
+        $err = $this->dbh->errorInfo();
+        error_log('createTables(): Unable to create revisions table: '.$err[2]);
+        return false;
+      }
+
+      return true;
+    } else {
+      error_log('createTables(): Table creating not supported for your database type!');
+      return false;
+    }
   }
 
   function cleanPageName($name) {
