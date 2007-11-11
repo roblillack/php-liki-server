@@ -8,6 +8,7 @@ class bsLikiBackend {
   var $tablePrefix = false;
   var $pagesTable = false;
   var $revsTable = false;
+  var $dbPersistent = false;
 
   function bsLikiBackend($handle_ = false) {
     global $bs_configpath;
@@ -23,7 +24,8 @@ class bsLikiBackend {
       }
 
       try {
-        $this->dbh = new PDO($this->database, $this->dbUser, $this->dbPassword);
+        $this->dbh = new PDO($this->database, $this->dbUser, $this->dbPassword, array(
+          PDO::ATTR_PERSISTENT => $this->dbPersistent));
       } catch (PDOException $e) {
         die('no connection to database possible: '.$e->getMessage());
       }
