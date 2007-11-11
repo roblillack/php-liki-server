@@ -2,23 +2,28 @@
 
 class bsLikiBackend {
   var $dbh;
-  var $db_database;
-  var $db_user = false;
-  var $db_password = false;
-  var $db_table = 'bsliki';
+  var $database;
+  var $dbUser = false;
+  var $dbPassword = false;
   var $tablePrefix = false;
+  var $pagesTable = false;
+  var $revsTable = false;
 
   function bsLikiBackend($handle_ = false) {
     global $bs_configpath;
     
     if ($handle_ === false) {
       require("config.php");
-      if ($this->tablePrefix === false && $this->db_table !== false) {
-        $this->tablePrefix = $this->db_table.'_';
+
+      if ($this->pagesTable === false) {
+        $this->pagesTable = ($this->tablePrefix !== false ? $this->tablePrefix : '') . 'pages';
+      }
+      if ($this->revsTable === false) {
+        $this->revsTable = ($this->tablePrefix !== false ? $this->tablePrefix : '') . 'revisions';
       }
 
       try {
-        $this->dbh = new PDO($this->db_database, $this->db_user, $this->db_password);
+        $this->dbh = new PDO($this->database, $this->dbUser, $this->dbPassword);
       } catch (PDOException $e) {
         die('no connection to database possible: '.$e->getMessage());
       }
@@ -98,10 +103,8 @@ class bsLikiBackend {
     /* refactor: NEUE revision nur anlegen, bei aenderung. dadurch LOCK bei JEDEM update (auch erfolglos o. keine aenderung),
                  aber: _kein_ lock beim autofree -- seiten werden nur noch freigegeben, revisionen nicht angeruehrt! */
     $timestamp = time() - 180;
-    $pages = $this->tablePrefix.'pages';
-    $revisions = $this->tablePrefix.'revisions';
     // unlock pages
-    $s = $this->dbh->prepare("UPDATE $pages SET lockkey='' WHERE ".
+    $s = $this->dbh->prepare("UPDATE {$this->pagesTable} SET lockkey='' WHERE ".
                              "(timestamp_lock < :timestamp) AND lockkey != ''");
     if (!$s) {
       $err = $this->dbh->errorInfo();
@@ -122,19 +125,17 @@ class bsLikiBackend {
     $ip = sprintf("%u", ip2long($_SERVER['REMOTE_ADDR']));
     //$agent = addslashes($_SERVER['HTTP_USER_AGENT']);
     $page = $this->cleanPageName($page);
-    $pages = $this->tablePrefix.'pages';
-    $revisions = $this->tablePrefix.'revisions';
 
     // first, try locking the page (and safe the old revision for later use)
     $this->dbh->beginTransaction();
-    $s = $this->dbh->prepare("SELECT id, lockkey, timestamp_lock FROM `{$this->tablePrefix}pages` WHERE name=:pagename");
+    $s = $this->dbh->prepare("SELECT id, lockkey, timestamp_lock FROM {$this->pagesTable} WHERE name=:pagename");
     $s->bindParam(':pagename', $page, PDO::PARAM_STR);
     if ($s->execute()) {
       $res = $s->fetchAll();
       $s = null;
       if (count($res) == 0) {
         error_log("page does not exist.");
-        $insert = $this->dbh->prepare("INSERT INTO `{$this->tablePrefix}pages` (name, lockkey, timestamp_lock, has_changes) ".
+        $insert = $this->dbh->prepare("INSERT INTO {$this->pagesTable} (name, lockkey, timestamp_lock, has_changes) ".
                                       "VALUES (:name, :lockkey, :timestamp, :changes)");
         $insert->bindParam(':name', $page, PDO::PARAM_STR);
         $insert->bindParam(':lockkey', $key, PDO::PARAM_STR);
@@ -159,7 +160,7 @@ class bsLikiBackend {
       $row = $res[0];
       if ($row['lockkey'] == null || $row['lockkey'] == '') {
         error_log("page is not locked ATM.");
-        $update = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET lockkey=:lockkey, timestamp_lock=:timestamp, has_changes=:changes ".
+        $update = $this->dbh->prepare("UPDATE {$this->pagesTable} SET lockkey=:lockkey, timestamp_lock=:timestamp, has_changes=:changes ".
                                 "WHERE id=:id");
         $update->bindParam(':id', $row['id'], PDO::PARAM_INT);
         $update->bindParam(':lockkey', $key, PDO::PARAM_STR);
@@ -190,7 +191,7 @@ class bsLikiBackend {
   function freePage($page, $key) {
     error_log('freePage()');
     $page = $this->cleanPageName($page);
-    $free = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET lockkey='' ".
+    $free = $this->dbh->prepare("UPDATE {$this->pagesTable} SET lockkey='' ".
                                 "WHERE lockkey=:key AND name=:page");
     $free->bindParam(':page', $page, PDO::PARAM_STR);
     $free->bindParam(':key', $key, PDO::PARAM_STR);
@@ -212,14 +213,14 @@ class bsLikiBackend {
   
   function getDetailedChangeLog($count = 10) {
     $this->autoFree();
-    $before = "IFNULL((SELECT content FROM `{$this->tablePrefix}revisions` AS C ".
+    $before = "IFNULL((SELECT content FROM {$this->revsTable} AS C ".
              "WHERE C.id < A.id AND C.page_id=A.page_id ORDER BY C.id DESC LIMIT 1), '')";
     $q = "SELECT content AS `content_after`, ".
          "$before AS `content_before`, ".
          "remote_ip, remote_agent, ".
          "timestamp_change AS timestamp, ".
          "name, A.id AS revision_id ".
-         "FROM `{$this->tablePrefix}revisions` AS A,`{$this->tablePrefix}pages` AS B ".
+         "FROM {$this->revsTable} AS A,{$this->pagesTable} AS B ".
          "WHERE A.page_id=B.id AND A.timestamp_change IS NOT NULL ".
          "ORDER BY A.timestamp_change DESC ".
          "LIMIT ?";
@@ -235,8 +236,8 @@ class bsLikiBackend {
   function getRecentChanges($count = 10) {
     $changes = "";
     $timestamp = time();
-    $q = "SELECT name,MAX(timestamp_change) AS ts FROM `{$this->tablePrefix}pages`,`{$this->tablePrefix}revisions` ".
-         "WHERE `{$this->tablePrefix}pages`.id=page_id AND timestamp_change IS NOT NULL ".
+    $q = "SELECT name,MAX(timestamp_change) AS ts FROM {$this->pagesTable},{$this->revsTable} ".
+         "WHERE {$this->pagesTable}.id=page_id AND timestamp_change IS NOT NULL ".
          "GROUP BY page_id ORDER BY ts DESC";
     if (is_numeric($count)) {
       $q .= " LIMIT $count";
@@ -264,7 +265,7 @@ class bsLikiBackend {
   function getRecentVisits($count = 10) {
     $changes = "";
     $timestamp = time();
-    $q = "SELECT name,timestamp_visit FROM `{$this->tablePrefix}pages` ".
+    $q = "SELECT name,timestamp_visit FROM {$this->pagesTable} ".
          "ORDER BY timestamp_visit DESC";
     if (is_numeric($count)) {
       $q .= " LIMIT $count";
@@ -290,7 +291,7 @@ class bsLikiBackend {
   }
 
   function getPageList() {
-    $res = $this->dbh->Execute("SELECT name FROM `{$this->tablePrefix}pages` ".
+    $res = $this->dbh->Execute("SELECT name FROM {$this->pagesTable} ".
                                "ORDER BY name ASC");
     if (!$res) {
       trigger_error("could not get page list");
@@ -307,8 +308,8 @@ class bsLikiBackend {
     // FIXME: how do we escape correctly using ADOdb?
     $what = $this->cleanPageName($what);
     $res = $this->dbh->Execute("SELECT name, content, timestamp_change, timestamp_visit ".
-                               "FROM `{$this->tablePrefix}pages` AS P, ".
-                               "`{$this->tablePrefix}revisions` AS R ".
+                               "FROM {$this->pagesTable} AS P, ".
+                               "{$this->revsTable} AS R ".
                                "WHERE R.page_id=P.id AND content like '%$what%' ".
                                "OR name like '%$what%' ".
                                "ORDER BY name ASC");
@@ -324,7 +325,7 @@ class bsLikiBackend {
   
   function getPageNamesContaining($what) {
     $what = $this->cleanPageName($what);
-    $res = $this->dbh->Execute("SELECT name FROM `{$this->tablePrefix}pages` ".
+    $res = $this->dbh->Execute("SELECT name FROM {$this->pagesTable} ".
                                "WHERE name like '%$what%' ".
                                "ORDER BY name ASC");
     if (!$res) {
@@ -340,7 +341,7 @@ class bsLikiBackend {
   function visitPage($page) {
     $page = $this->cleanPageName($page);
     $visit = time();
-    $query = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET timestamp_visit=:visit WHERE name=:page");
+    $query = $this->dbh->prepare("UPDATE {$this->pagesTable} SET timestamp_visit=:visit WHERE name=:page");
     $query->bindParam(':visit', $visit, PDO::PARAM_INT);
     $query->bindParam(':page', $page, PDO::PARAM_STR);
     $r = $query->execute();
@@ -350,8 +351,8 @@ class bsLikiBackend {
   
   function getRevision($rev) {
     $this->autoFree();
-    $p = "`{$this->tablePrefix}pages`";
-    $r = "`{$this->tablePrefix}revisions`";
+    $p = "{$this->pagesTable}";
+    $r = "{$this->revsTable}";
     $res = $this->dbh->Execute("SELECT content,timestamp_change FROM $r ".
                                "WHERE id=?", array($rev));
     if (!$res) {
@@ -373,8 +374,8 @@ class bsLikiBackend {
   function getPage($page) {
     $this->autoFree();
     $page = $this->cleanPageName($page);
-    $p = "`{$this->tablePrefix}pages`";
-    $r = "`{$this->tablePrefix}revisions`";
+    $p = "{$this->pagesTable}";
+    $r = "{$this->revsTable}";
     $q = "SELECT revision_id,name,content,timestamp_change,timestamp_visit,timestamp_lock,remote_ip,remote_agent,lockkey FROM $p,$r ".
          "WHERE name=:pagename AND $p.revision_id=$r.id";
     $s = $this->dbh->prepare($q);
@@ -398,8 +399,8 @@ class bsLikiBackend {
   function getTimestamp($page) {
     $this->autoFree();
     $page = $this->cleanPageName($page);
-    $p = "`{$this->tablePrefix}pages`";
-    $r = "`{$this->tablePrefix}revisions`";
+    $p = "{$this->pagesTable}";
+    $r = "{$this->revsTable}";
     $select = $this->dbh->prepare("SELECT timestamp_change FROM $p,$r ".
                                   "WHERE name=:page AND $p.revision_id=$r.id");
     $select->bindParam(':page', $page, PDO::PARAM_STR);
@@ -422,7 +423,7 @@ class bsLikiBackend {
     $now = time();
     $tslock = $now - 180;
     $page = $this->cleanPageName($page);
-    $stmt = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET timestamp_lock=:now ".
+    $stmt = $this->dbh->prepare("UPDATE {$this->pagesTable} SET timestamp_lock=:now ".
                                "WHERE name=:page AND lockkey=:key AND timestamp_lock >= :tslock");
     $stmt->bindParam(':now', $now, PDO::PARAM_INT);
     $stmt->bindParam(':page', $page, PDO::PARAM_STR);
@@ -479,7 +480,7 @@ class bsLikiBackend {
     }
     
     $select = $this->dbh->prepare("SELECT id, has_changes, revision_id ".
-                                  "FROM `{$this->tablePrefix}pages` WHERE name=:page AND lockkey=:key");
+                                  "FROM {$this->pagesTable} WHERE name=:page AND lockkey=:key");
     $select->bindParam(':page', $page, PDO::PARAM_STR);
     $select->bindParam(':key', $key, PDO::PARAM_STR);
     if (!$select->execute()) {
@@ -504,7 +505,7 @@ class bsLikiBackend {
 
     if ($row['has_changes'] == 'N') {
       error_log('updatePage(): revision has no changes.');
-      $insert = $this->dbh->prepare("INSERT INTO `{$this->tablePrefix}revisions` (page_id, timestamp_change, content, remote_ip, remote_agent) ".
+      $insert = $this->dbh->prepare("INSERT INTO {$this->revsTable} (page_id, timestamp_change, content, remote_ip, remote_agent) ".
                                     "VALUES(:pageid, :timestamp, :content, :remoteip, :remoteagent)");
       $insert->bindParam(':pageid', $id, PDO::PARAM_INT);
       $insert->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
@@ -520,7 +521,7 @@ class bsLikiBackend {
       $insert = null;
       $revid = $this->dbh->lastInsertId();
       error_log("updatePage(): created new revision #$revid");
-      $update = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET revision_id=:revid, has_changes='Y' WHERE id=:pageid");
+      $update = $this->dbh->prepare("UPDATE {$this->pagesTable} SET revision_id=:revid, has_changes='Y' WHERE id=:pageid");
       $update->bindParam(':revid', $revid, PDO::PARAM_INT);
       $update->bindParam(':pageid', $id, PDO::PARAM_INT);
 
@@ -534,7 +535,7 @@ class bsLikiBackend {
       $update = null;
     } else {
       $revid = $row['revision_id'];
-      $update = $this->dbh->prepare("UPDATE `{$this->tablePrefix}revisions` ".
+      $update = $this->dbh->prepare("UPDATE {$this->revsTable} ".
                                "SET timestamp_change=:timestamp, content=:content, remote_ip=:remoteip, remote_agent=:remoteagent ".
                                "WHERE id=:revid");
       $update->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
