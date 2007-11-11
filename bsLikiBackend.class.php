@@ -429,7 +429,13 @@ class bsLikiBackend {
     $stmt->bindParam(':page', $page, PDO::PARAM_STR);
     $stmt->bindParam(':key', $key, PDO::PARAM_STR);
     $stmt->bindParam(':tslock', $tslock, PDO::PARAM_INT);
-    return ($stmt->execute());
+    $r = $stmt->execute();
+    $stmt = null;
+    if (!$r) {
+      $err = $this->dbh->errorInfo();
+      die($err[2]);
+    }
+    return true;
   }
 
   // TODO: manually calculate sums of special pages.
