@@ -175,6 +175,9 @@ class bsLikiBackend {
           }
           $update = null;
           error_log('lockPage(): Unable to lock page.');
+        } else {
+          $err = $this->dbh->errorInfo();
+          error_log('lockPage(): Unable to lock page: '.$err[2]);
         }
         $update = null;
       } else {
