@@ -27,6 +27,9 @@ class bsLikiBackend {
       } catch (PDOException $e) {
         die('no connection to database possible: '.$e->getMessage());
       }
+      if (strncmp($this->database, "sqlite:", 7) === 0) {
+        $this->dbh->exec("PRAGMA temp_store = MEMORY");
+      }
     } else {
       $this->dbh = $handle_;
     }
@@ -83,12 +86,12 @@ class bsLikiBackend {
 
   function createTables() {
     if (strncmp($this->database, "sqlite:", 7) === 0) {
-      if ($this->dbh->exec("CREATE TABLE pages (id INTEGER PRIMARY KEY, name, lockkey, timestamp_visit INTEGER, timestamp_lock INTEGER, revision_id INTEGER, has_changes)") === FALSE) {
+      if ($this->dbh->exec("CREATE TABLE {$this->pagesTable} (id INTEGER PRIMARY KEY, name, lockkey, timestamp_visit INTEGER, timestamp_lock INTEGER, revision_id INTEGER, has_changes)") === FALSE) {
         $err = $this->dbh->errorInfo();
         error_log('createTables(): Unable to create pages table: '.$err[2]);
         return false;
       }
-      if ($this->dbh->exec("CREATE TABLE revisions (id INTEGER PRIMARY KEY, page_id INTEGER, timestamp_change INTEGER, content, remote_ip INTEGER, remote_agent)") === FALSE) {
+      if ($this->dbh->exec("CREATE TABLE {$this->revsTable} (id INTEGER PRIMARY KEY, page_id INTEGER, timestamp_change INTEGER, content, remote_ip INTEGER, remote_agent)") === FALSE) {
         $err = $this->dbh->errorInfo();
         error_log('createTables(): Unable to create revisions table: '.$err[2]);
         return false;
