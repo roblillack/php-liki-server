@@ -87,23 +87,52 @@ class bsLikiBackend {
   }
 
   function createTables() {
-    if (strncmp($this->database, "sqlite:", 7) === 0) {
-      if ($this->dbh->exec("CREATE TABLE {$this->pagesTable} (id INTEGER PRIMARY KEY, name, lockkey, timestamp_visit INTEGER, timestamp_lock INTEGER, revision_id INTEGER, has_changes)") === FALSE) {
+    $schemas = array("mysql" => array(
+            "pages" => "CREATE TABLE `{$this->pagesTable}` (".
+                       " `id` int(10) unsigned NOT NULL auto_increment,".
+                       " `name` varchar(100) NOT NULL,".
+                       " `lockkey` varchar(32) character set ascii default NULL,".
+                       " `timestamp_visit` int(10) unsigned default NULL,".
+                       " `timestamp_lock` int(10) unsigned default NULL,".
+                       " `revision_id` int(10) unsigned default NULL,".
+                       " `has_changes` char(1) character set latin1 NOT NULL default 'N',".
+                       " PRIMARY KEY  (`id`),".
+                       " KEY `lockkey` USING BTREE (`lockkey`),".
+                       " UNIQUE KEY `name` USING BTREE (`name`)".
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8",
+            "revisions" => "CREATE TABLE `{$this->revsTable}` (".
+                           " `id` int(10) unsigned NOT NULL auto_increment,".
+                           " `page_id` int(10) unsigned NOT NULL,".
+                           " `timestamp_change` int(10) unsigned default NULL,".
+                           " `content` text,".
+                           " `remote_ip` int(10) unsigned default NULL,".
+                           " `remote_agent` varchar(200) default NULL,".
+                           " PRIMARY KEY (`id`),".
+                           " KEY `page_id` (`page_id`),".
+                           " KEY `timestamp_change` (`timestamp_change`)".
+                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
+          ),
+          "sqlite" => array(
+            "pages" => "CREATE TABLE {$this->pagesTable} (id INTEGER PRIMARY KEY, name, lockkey, timestamp_visit INTEGER, timestamp_lock INTEGER, revision_id INTEGER, has_changes)",
+            "revisions" => "CREATE TABLE {$this->revsTable} (id INTEGER PRIMARY KEY, page_id INTEGER, timestamp_change INTEGER, content, remote_ip INTEGER, remote_agent)"
+          )
+    );
+    $driver = $this->dbh->getAttribute(PDO::ATTR_DRIVER_NAME);
+    if (array_key_exists($driver, $schemas)) {
+      $this->dbh->beginTransaction();
+      if ($this->dbh->exec($schemas[$driver]['pages']) === FALSE ||
+          $this->dbh->exec($schemas[$driver]['revisions']) === FALSE) {
         $err = $this->dbh->errorInfo();
         error_log('createTables(): Unable to create pages table: '.$err[2]);
+        $this->dbh->rollback();
         return false;
       }
-      if ($this->dbh->exec("CREATE TABLE {$this->revsTable} (id INTEGER PRIMARY KEY, page_id INTEGER, timestamp_change INTEGER, content, remote_ip INTEGER, remote_agent)") === FALSE) {
-        $err = $this->dbh->errorInfo();
-        error_log('createTables(): Unable to create revisions table: '.$err[2]);
-        return false;
-      }
-
+      $this->dbh->commit();
       return true;
-    } else {
-      error_log('createTables(): Table creating not supported for your database type!');
-      return false;
     }
+
+    error_log('createTables(): Table creating not supported for your database type!');
+    return false;
   }
 
   function cleanPageName($name) {
