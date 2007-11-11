@@ -101,7 +101,7 @@ class bsLikiBackend {
     $pages = $this->tablePrefix.'pages';
     $revisions = $this->tablePrefix.'revisions';
     // unlock pages
-    $s = $this->dbh->prepare("UPDATE `$pages` SET lockkey='' WHERE ".
+    $s = $this->dbh->prepare("UPDATE $pages SET lockkey='' WHERE ".
                              "(timestamp_lock < :timestamp) AND lockkey != ''");
     if (!$s) {
       $err = $this->dbh->errorInfo();
