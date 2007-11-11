@@ -108,12 +108,18 @@ class bsLikiBackend {
                              "(timestamp_lock < :timestamp) AND lockkey != ''");
     if (!$s) {
       $err = $this->dbh->errorInfo();
-      die($err[2]);
+      error_log('autoFree(): '.$err[2]);
+      return false;
     }
     $s->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
-    $s->execute();
-    $s = null;
+    if (!$s->execute()) {
+      $err = $this->dbh->errorInfo();
+      error_log('autoFree(): '.$err[2]);
+      $s = null;
+      return false;
+    }
 
+    $s = null;
     return true;
   }
 
@@ -121,9 +127,7 @@ class bsLikiBackend {
     $this->autoFree();
     $timestamp = time();
     $n = 'N';
-    //$key = addslashes($key);
     $ip = sprintf("%u", ip2long($_SERVER['REMOTE_ADDR']));
-    //$agent = addslashes($_SERVER['HTTP_USER_AGENT']);
     $page = $this->cleanPageName($page);
 
     // first, try locking the page (and safe the old revision for later use)
