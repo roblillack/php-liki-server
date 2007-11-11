@@ -1,7 +1,7 @@
 <?php
+
 class bsLikiBackend {
   var $dbh;
-  var $db_host;
   var $db_database;
   var $db_user;
   var $db_password;
@@ -17,13 +17,11 @@ class bsLikiBackend {
         $this->tablePrefix = $this->db_table.'_';
       }
 
-      $this->dbh = mysql_connect($this->db_host,
-                                 $this->db_user,
-                                 $this->db_password);
-      if ($this->dbh === false)
-        die('no connection to database possible');
-      if (mysql_select_db($this->db_database, $this->dbh) === false)
-        die('could not select database '.$this->db_database);
+      try {
+        $this->dbh = new PDO($this->db_database, $this->db_user, $this->db_password);
+      } catch (PDOException $e) {
+        die('no connection to database possible: '.$e->getMessage());
+      }
     } else {
       $this->dbh = $handle_;
     }
@@ -57,7 +55,7 @@ class bsLikiBackend {
   }
 
   function tablePresent($tablename, $columns) {
-    $res = @mysql_query('DESC `'.$tablename.'`', $this->dbh);
+    /*$res = mysql_query('DESC `'.$tablename.'`', $this->dbh);
     if ($res) {
       if (mysql_num_rows($res) >= count($columns)) {
         $cols = array();
@@ -74,7 +72,7 @@ class bsLikiBackend {
       }
     } else {
       return false;
-    }
+    }*/
     return true;
   }
 
@@ -96,32 +94,18 @@ class bsLikiBackend {
   }
 
   function autoFree() {
-    $timestamp = time();
+    // TODO FIXME TODO FIXME TODO FIXME
+    /* refactor: NEUE revision nur anlegen, bei aenderung. dadurch LOCK bei JEDEM update (auch erfolglos o. keine aenderung),
+                 aber: _kein_ lock beim autofree -- seiten werden nur noch freigegeben, revisionen nicht angeruehrt! */
+    $timestamp = time() - 180;
     $pages = $this->tablePrefix.'pages';
     $revisions = $this->tablePrefix.'revisions';
     // unlock pages
-    mysql_query("UPDATE `$pages` SET lockkey='' WHERE ".
-                "(timestamp_lock < $timestamp - 180) AND lockkey != ''", $this->dbh);
-
-    // this finds the next older revisions that is not empty
-    $oldrev = "SELECT o.id FROM `$revisions` AS o ".
-              "WHERE o.id < r.id AND o.page_id=p.id AND o.timestamp_change IS NOT NULL ".
-              "ORDER BY o.id DESC LIMIT 1";
-    $oldrev = "SELECT MAX(older.id) FROM `$revisions` AS older ".
-              "WHERE older.timestamp_change IS NOT NULL ".
-              "AND older.id < p.revision_id ".
-              "AND older.page_id=p.id";
-    // this finds the oldest one (regardless if it is empty)
-    $oldest = "SELECT MIN(id) FROM `$revisions` AS oldest WHERE oldest.page_id=p.id";
-    // now, reset references to empty revisions to the next older non-empty one (or the oldest one)
-    mysql_query("UPDATE `$pages` AS p, `$revisions` as r SET p.revision_id=IFNULL(($oldrev),($oldest)) ".
-                "WHERE (p.revision_id=r.id AND (p.lockkey='' OR p.lockkey IS NULL) AND r.timestamp_change IS NULL) ".
-                "OR (SELECT COUNT(*) FROM `$revisions` WHERE id=p.revision_id)=0",
-                $this->dbh);
-    // delete empty revisions
-    mysql_query("DELETE r FROM `$revisions` AS r, `$pages` AS p ".
-                "WHERE r.page_id = p.id AND p.revision_id != r.id AND r.timestamp_change IS NULL",
-                $this->dbh);
+    $s = $this->dbh->prepare("UPDATE `$pages` SET lockkey='' WHERE ".
+                             "(timestamp_lock < :timestamp) AND lockkey != ''");
+    $s->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
+    $s->execute();
+    $s = null;
 
     return true;
   }
@@ -129,58 +113,95 @@ class bsLikiBackend {
   function lockPage($page, $key) {
     $this->autoFree();
     $timestamp = time();
-    $key = addslashes($key);
+    $n = 'N';
+    //$key = addslashes($key);
     $ip = sprintf("%u", ip2long($_SERVER['REMOTE_ADDR']));
-    $agent = addslashes($_SERVER['HTTP_USER_AGENT']);
+    //$agent = addslashes($_SERVER['HTTP_USER_AGENT']);
     $page = $this->cleanPageName($page);
     $pages = $this->tablePrefix.'pages';
     $revisions = $this->tablePrefix.'revisions';
 
     // first, try locking the page (and safe the old revision for later use)
-    $q = "UPDATE `$pages` ".
-         "SET lockkey='$key', timestamp_lock=$timestamp ".
-         "WHERE name='$page' AND (lockkey='' OR ISNULL(lockkey))";
-    mysql_query($q, $this->dbh);
+    $this->dbh->beginTransaction();
+    $s = $this->dbh->prepare("SELECT id, lockkey, timestamp_lock FROM `{$this->tablePrefix}pages` WHERE name=:pagename");
+    $s->bindParam(':pagename', $page, PDO::PARAM_STR);
+    if ($s->execute()) {
+      $res = $s->fetchAll();
+      $s = null;
+      if (count($res) == 0) {
+        error_log("page does not exist.");
+        $insert = $this->dbh->prepare("INSERT INTO `{$this->tablePrefix}pages` (name, lockkey, timestamp_lock, has_changes) ".
+                                      "VALUES (:name, :lockkey, :timestamp, :changes)");
+        $insert->bindParam(':name', $page, PDO::PARAM_STR);
+        $insert->bindParam(':lockkey', $key, PDO::PARAM_STR);
+        $insert->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
+        $insert->bindParam(':changes', $n, PDO::PARAM_STR);
+        if ($insert->execute()) {
+          error_log("page created AND LOCKED.");
+          $insert = null;
+          $this->dbh->commit();
+          return true;
+        }
 
-    if (mysql_affected_rows($this->dbh) !== 1) {
-      // unable to lock page.
-      return false;
+        $insert = null;
+        error_log('unable to create page.');
+        $err = $this->dbh->errorInfo();
+        error_log($err[2]);
+        $this->dbh->rollback();
+        return false;
+      }
+
+      error_log("page exists.");
+      $row = $res[0];
+      if ($row['lockkey'] == null || $row['lockkey'] == '') {
+        error_log("page is not locked ATM.");
+        $update = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET lockkey=:lockkey, timestamp_lock=:timestamp, has_changes=:changes ".
+                                "WHERE id=:id");
+        $update->bindParam(':id', $row['id'], PDO::PARAM_INT);
+        $update->bindParam(':lockkey', $key, PDO::PARAM_STR);
+        $update->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
+        $update->bindParam(':changes', $n, PDO::PARAM_STR);
+        if ($update->execute()) {
+          if ($update->rowCount() == 1) {
+            error_log("LOCKED PAGE.");
+            $update = null;
+            $this->dbh->commit();
+            return true;
+          }
+          $update = null;
+          error_log('lockPage(): Unable to lock page.');
+        }
+        $update = null;
+      } else {
+        error_log('lockPage(): page locked for another '.
+                  (180 - ($timestamp - $row['timestamp_lock'])) . ' seconds...');
+      }
     }
 
-    // successfully locked page
-    // now, create a new revision...
-    $q = "INSERT INTO `$revisions` (page_id,content,remote_ip,remote_agent) ".
-         "SELECT page_id, content, $ip AS remote_ip, '$agent' AS remote_agent ".
-         "FROM `$revisions` WHERE id=(SELECT revision_id FROM `$pages` WHERE name='$page')";
-    mysql_query($q, $this->dbh);
-
-    if (!($id = mysql_insert_id($this->dbh))) {
-      // TODO: unable to create new revision. why?
-      return false;
-    }
-
-    // ok, tell the page about the new revision.
-    mysql_query("UPDATE `$pages` ".
-                "SET revision_id=$id ".
-                "WHERE name='$page' AND lockkey='$key'",
-                $this->dbh);
-
-    if (mysql_affected_rows($this->dbh) !== 1) {
-      // dammit, we lost the lock from two queries above again!
-      mysql_query("DELETE FROM `$revisions` WHERE id=$id", $this->dbh);
-      return false;
-    }
-
-    return true;
+    error_log('DID NOT GIVE LOCK!');
+    $this->dbh->rollback();
+    return false;
   }
 
   function freePage($page, $key) {
+    error_log('freePage()');
     $page = $this->cleanPageName($page);
-    $key = addslashes($key);
-    mysql_query("UPDATE `{$this->tablePrefix}pages` SET lockkey='' WHERE lockkey='$key' AND name='$page'", $this->dbh);
-    if (mysql_affected_rows($this->dbh) != 1) {
+    $free = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET lockkey='' ".
+                                "WHERE lockkey=:key AND name=:page");
+    $free->bindParam(':page', $page, PDO::PARAM_STR);
+    $free->bindParam(':key', $key, PDO::PARAM_STR);
+    if (!$free->execute()) {
+      $free = null;
+      error_log('freePage(): error in sql statement.');
+      return false;
+    }
+
+    if ($free->rowCount() !== 1) {
+      error_log('freePage(): affected rows: '.$free->rowCount());
+      $free = null;
       return false;
     } else {
+      $free = null;
       return true;
     }
   }
@@ -197,13 +218,13 @@ class bsLikiBackend {
          "FROM `{$this->tablePrefix}revisions` AS A,`{$this->tablePrefix}pages` AS B ".
          "WHERE A.page_id=B.id AND A.timestamp_change IS NOT NULL ".
          "ORDER BY A.timestamp_change DESC ".
-         "LIMIT $count";
-    if (!($res = mysql_query($q, $this->dbh))) return false;
+         "LIMIT ?";
+    if (!($res = $this->dbh->Execute($q, array($count)))) return false;
     $list = array();
-    while ($r = mysql_fetch_assoc($res)) {
-      $list[] = $r;
+    while (!$res->EOF) {
+      $list[] = $res->FetchRow();
     }
-    mysql_free_result($res);
+    $res->Close();
     return $list;
   }
 
@@ -213,13 +234,12 @@ class bsLikiBackend {
     $q = "SELECT name,MAX(timestamp_change) AS ts FROM `{$this->tablePrefix}pages`,`{$this->tablePrefix}revisions` ".
          "WHERE `{$this->tablePrefix}pages`.id=page_id AND timestamp_change IS NOT NULL ".
          "GROUP BY page_id ORDER BY ts DESC";
-    if ($count !== false)
+    if (is_numeric($count)) {
       $q .= " LIMIT $count";
-    $res = mysql_query($q);
-    if (!$res) return false;
+    }
     $list = array();
-    while ($r = mysql_fetch_assoc($res)) {
-      $seconds = $timestamp - $r['ts'];
+    foreach ($this->dbh->query($q) as $row) {
+      $seconds = $timestamp - $row['ts'];
       $minutes = floor($seconds / 60); $seconds %= 60;
       $hours = floor($minutes / 60); $minutes %= 60;
       $days = floor($hours / 24); $hours %= 24;
@@ -231,10 +251,9 @@ class bsLikiBackend {
       if ($days > 0 || $hours > 0 || $minutes > 0)
         $changes .= str_pad($minutes, 2, '0', STR_PAD_LEFT).'m';
       $changes .= str_pad($seconds, 2, '0', STR_PAD_LEFT).'s';
-      $list[] = array('name'       => $r['name'],
+      $list[] = array('name'       => $row['name'],
                       'howlongago' => $changes);
     }
-    mysql_free_result($res);
     return $list;
   }
   
@@ -243,12 +262,11 @@ class bsLikiBackend {
     $timestamp = time();
     $q = "SELECT name,timestamp_visit FROM `{$this->tablePrefix}pages` ".
          "ORDER BY timestamp_visit DESC";
-    if ($count !== false)
+    if (is_numeric($count)) {
       $q .= " LIMIT $count";
-    $res = mysql_query($q);
-    if (!$res) return false;
+    }
     $list = array();
-    while ($r = mysql_fetch_assoc($res)) {
+    foreach ($this->dbh->query($q) as $r) {
       $seconds = $timestamp - $r['timestamp_visit'];
       $minutes = floor($seconds / 60); $seconds %= 60;
       $hours = floor($minutes / 60); $minutes %= 60;
@@ -264,90 +282,87 @@ class bsLikiBackend {
       $list[] = array('name'       => $r['name'],
                       'howlongago' => $changes);
     }
-    mysql_free_result($res);
     return $list;
   }
 
   function getPageList() {
-    $res = mysql_query("SELECT name FROM `{$this->tablePrefix}pages` ".
-                       "ORDER BY name ASC");
+    $res = $this->dbh->Execute("SELECT name FROM `{$this->tablePrefix}pages` ".
+                               "ORDER BY name ASC");
     if (!$res) {
       trigger_error("could not get page list");
       return false;
     }
     $pages = array();
-    while ($r = mysql_fetch_array($res))
-      $pages[] = $r[0];
-    mysql_free_result($res);
+    while ($r = $res->FetchRow()) $pages[] = $r[0];
+    $res->Close();
     return $pages;
   }
   
   // TODO: lists history...
   function getPagesContaining($what) {
-    $res = mysql_query("SELECT name,content,timestamp_change,timestamp_visit FROM `{$this->tablePrefix}pages` AS P,`{$this->tablePrefix}revisions` AS R ".
-                       "WHERE R.page_id=P.id AND R.timestamp_change IS NOT NULL AND content like '%".addslashes($what)."%' ".
-                       "OR name like '%".addslashes($what)."%' ".
-                       "ORDER BY name ASC");
+    // FIXME: how do we escape correctly using ADOdb?
+    $what = $this->cleanPageName($what);
+    $res = $this->dbh->Execute("SELECT name, content, timestamp_change, timestamp_visit ".
+                               "FROM `{$this->tablePrefix}pages` AS P, ".
+                               "`{$this->tablePrefix}revisions` AS R ".
+                               "WHERE R.page_id=P.id AND content like '%$what%' ".
+                               "OR name like '%$what%' ".
+                               "ORDER BY name ASC");
     if (!$res) {
       trigger_error("could not get page list");
       return false;
     }
     $pages = array();
-    while ($r = mysql_fetch_assoc($res))
-      $pages[] = $r;
-    mysql_free_result($res);
+    while ($r = $res->FetchRow()) $pages[] = $r;
+    $res->Close();
     return $pages;
   }
   
-  // TODO
   function getPageNamesContaining($what) {
-    $res = mysql_query("SELECT name FROM `".$this->db_table."` ".
-                       "WHERE content like '%".addslashes($what)."%' ".
-                       "OR name like '%".addslashes($what)."%' ".
-                       "ORDER BY name ASC");
+    $what = $this->cleanPageName($what);
+    $res = $this->dbh->Execute("SELECT name FROM `{$this->tablePrefix}pages` ".
+                               "WHERE name like '%$what%' ".
+                               "ORDER BY name ASC");
     if (!$res) {
       die("could not get page list: ".mysql_error());
       return false;
     }
     $pages = array();
-    while ($r = mysql_fetch_array($res))
-      $pages[] = $r[0];
-    mysql_free_result($res);
+    while ($r = $res->FetchRow()) $pages[] = $r[0];
+    $res->Close();
     return $pages;
   }
   
   function visitPage($page) {
-    $timestamp = time();
     $page = $this->cleanPageName($page);
-    $query = "UPDATE `{$this->tablePrefix}pages` SET timestamp_visit=$timestamp ".
-             "WHERE name='$page'";
-    mysql_query($query, $this->dbh);
-
-    if (mysql_affected_rows($this->dbh) != 1) {
-      return false;
-    } else {
-      return true;
-    }
+    $visit = time();
+    $query = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET timestamp_visit=:visit WHERE name=:page");
+    $query->bindParam(':visit', $visit, PDO::PARAM_INT);
+    $query->bindParam(':page', $page, PDO::PARAM_STR);
+    $r = $query->execute();
+    $query = null;
+    return $r;
   }
   
   function getRevision($rev) {
     $this->autoFree();
     $p = "`{$this->tablePrefix}pages`";
     $r = "`{$this->tablePrefix}revisions`";
-    $res = mysql_query("SELECT content,timestamp_change FROM $r ".
-                       "WHERE id=$rev");
+    $res = $this->dbh->Execute("SELECT content,timestamp_change FROM $r ".
+                               "WHERE id=?", array($rev));
     if (!$res) {
       trigger_error("could not get content of page $page");
       return false;
     }
-    if (mysql_num_rows($res) != 1) {
+    if ($res->RecordCount() != 1) {
       // page does not exist
       return array('name'             => $page,
                    'content'          => '',
                    'timestamp_change' => 1);
     }
-    $r = mysql_fetch_assoc($res);
-    mysql_free_result($res);
+    $r = $res->FetchRow();
+    $res->Close();
+
     return $r;
   }
    
@@ -356,20 +371,23 @@ class bsLikiBackend {
     $page = $this->cleanPageName($page);
     $p = "`{$this->tablePrefix}pages`";
     $r = "`{$this->tablePrefix}revisions`";
-    $res = mysql_query("SELECT revision_id,name,content,timestamp_change,timestamp_visit,timestamp_lock,remote_ip,remote_agent,lockkey FROM $p,$r ".
-                       "WHERE name='$page' AND $p.revision_id=$r.id");
-    if (!$res) {
+    $q = "SELECT revision_id,name,content,timestamp_change,timestamp_visit,timestamp_lock,remote_ip,remote_agent,lockkey FROM $p,$r ".
+         "WHERE name=:pagename AND $p.revision_id=$r.id";
+    $s = $this->dbh->prepare($q);
+    $s->bindParam(':pagename', $page, PDO::PARAM_STR);
+    if (!$s->execute()) {
+      error_log($q);
       trigger_error("could not get content of page $page");
       return false;
     }
-    if (mysql_num_rows($res) != 1) {
+    if (!($r = $s->fetch())) {
       // page does not exist
+      $s = null;
       return array('name'             => $page,
                    'content'          => '',
                    'timestamp_change' => 1);
     }
-    $r = mysql_fetch_assoc($res);
-    mysql_free_result($res);
+    $s = null;
     return $r;
   }
   
@@ -378,57 +396,69 @@ class bsLikiBackend {
     $page = $this->cleanPageName($page);
     $p = "`{$this->tablePrefix}pages`";
     $r = "`{$this->tablePrefix}revisions`";
-    $res = mysql_query("SELECT timestamp_change FROM $p,$r ".
-                       "WHERE name='$page' AND $p.revision_id=$r.id AND timestamp_change IS NOT NULL");
-     if (!$res) {
+    $select = $this->dbh->prepare("SELECT timestamp_change FROM $p,$r ".
+                                  "WHERE name=:page AND $p.revision_id=$r.id");
+    $select->bindParam(':page', $page, PDO::PARAM_STR);
+
+    if (!$select->execute()) {
       trigger_error("could not get timestamp of page $page");
+      $select = null;
       return false;
     }
-    if (mysql_num_rows($res) != 1) {
+    if (!($r = $select->fetch())) {
       // page does not exist
+      $select = null;
       return false;
     }
-    $r = mysql_fetch_assoc($res);
-    mysql_free_result($res);
-    return $r['timestamp_change'];
+    $select = null;
+    return is_numeric($r['timestamp_change']) ? $r['timestamp_change'] : 0;
   }
 
   function renewLock($page, $key) {
-    $key = addslashes($key);
+    $now = time();
+    $tslock = $now - 180;
     $page = $this->cleanPageName($page);
-    $this->autoFree();
-    // TODO: check for last change. don't allow having a page locked all time without changes!
-    mysql_query("UPDATE `{$this->tablePrefix}pages` SET timestamp_lock=".time()." ".
-                "WHERE name='$page' AND lockkey='$key'",
-                $this->dbh);
-    if (mysql_affected_rows($this->dbh) == 1 ||
-        preg_replace("/^[^0-9]+matched[^0-9]+([0-9]+)\ .*$/", "$1", mysql_info()) == 1) {
-        return true;
-    }
-  
-    return false;
+    $stmt = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET timestamp_lock=:now ".
+                               "WHERE name=:page AND lockkey=:key AND timestamp_lock >= :tslock");
+    $stmt->bindParam(':now', $now, PDO::PARAM_INT);
+    $stmt->bindParam(':page', $page, PDO::PARAM_STR);
+    $stmt->bindParam(':key', $key, PDO::PARAM_STR);
+    $stmt->bindParam(':tslock', $tslock, PDO::PARAM_INT);
+    return ($stmt->execute());
   }
 
   // TODO: manually calculate sums of special pages.
   function getPageMD5($page) {
-    $page = $this->cleanPageName($page);
-    $q = "SELECT MD5(TRIM(content)) AS md5 FROM {$this->tablePrefix}revisions,{$this->tablePrefix}pages ".
-         "WHERE revision_id={$this->tablePrefix}revisions.id AND name='$page'";
-    $res = mysql_query($q, $this->dbh);
-    if (!$res || mysql_num_rows($res) != 1) {
+    $q = "SELECT MD5(TRIM(content)) AS md5 ".
+         "FROM {$this->tablePrefix}revisions AS R, {$this->tablePrefix}pages AS P ".
+         "WHERE revision_id=R.id AND name=?";
+    $res = $this->dbh->Execute($q, array($this->cleanPageName($page)));
+    if (!$res) {
+      error_log("error executing: $q");
       return false;
     }
-    $r = mysql_fetch_assoc($res);
-    mysql_free_result($res);
+    if (!$res || $res->RecordCount() != 1) {
+      return false;
+    }
+    $r = $res->FetchRow();
+    $res->Close();
     return $r['md5'];
   }
  
   function updatePage($page, $key, $content) {
-    $key = addslashes($key);
+    error_log("updatePage($page, $key)");
     $page = $this->cleanPageName($page);
+    $timestamp = time();
+    $ip = sprintf("%u", ip2long($_SERVER['REMOTE_ADDR']));
+    $agent = $_SERVER['HTTP_USER_AGENT'];
+
+    $this->dbh->beginTransaction();
 
     // first, renew the lock
     if (!$this->renewLock($page, $key)) {
+      error_log('updatePage(): lost lock --> FALSE');
+
+      $this->dbh->rollback();
       return false;
     }
 
@@ -437,27 +467,93 @@ class bsLikiBackend {
     // remove superficious spaces/lines
     $content = trim($content);
 
-    if (md5($content) == $this->getPageMD5($page)) {
-      // no changes...
+    $oldpage = $this->getPage($page);
+    if ($content == $oldpage['content']) {
+      error_log('updatePage(): no changes --> TRUE');
+      $this->dbh->rollback();
       return true;
     }
+    
+    $select = $this->dbh->prepare("SELECT id, has_changes, revision_id ".
+                                  "FROM `{$this->tablePrefix}pages` WHERE name=:page AND lockkey=:key");
+    $select->bindParam(':page', $page, PDO::PARAM_STR);
+    $select->bindParam(':key', $key, PDO::PARAM_STR);
+    if (!$select->execute()) {
+      error_log('updatePage(): Error processing request --> FALSE');
+      $select = null;
+      $this->dbh->rollback();
+      return false;
+    }
+    
+    $res = $select->fetchAll();
+    $select = null;
+    error_log(count($res).' results.');
 
-    $content = addslashes($content);
-    $query = "UPDATE `{$this->tablePrefix}revisions` SET timestamp_change=".time().", content='$content' ".
-             "WHERE id=(SELECT revision_id FROM `{$this->tablePrefix}pages` WHERE name='$page')";
-    mysql_query($query, $this->dbh);
+    if (count($res) != 1) {
+      error_log('updatePage(): page not found or don\'t have lock --> FALSE');
+      $this->dbh->rollback();
+      return false;
+    }
+    error_log('updatePage(): Page found.');
+    $row = $res[0];
+    $id = $row['id'];
 
-    if (mysql_affected_rows($this->dbh) != 1 ||
-        preg_replace("/^[^0-9]+matched[^0-9]+([0-9]+)\ .*$/", "$1", mysql_info()) == 1) {
-      // Rows matched: 1  Changed: 0  Warnings: 0
-      return true;
+    if ($row['has_changes'] == 'N') {
+      error_log('updatePage(): revision has no changes.');
+      $insert = $this->dbh->prepare("INSERT INTO `{$this->tablePrefix}revisions` (page_id, timestamp_change, content, remote_ip, remote_agent) ".
+                                    "VALUES(:pageid, :timestamp, :content, :remoteip, :remoteagent)");
+      $insert->bindParam(':pageid', $id, PDO::PARAM_INT);
+      $insert->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
+      $insert->bindParam(':content', $content, PDO::PARAM_STR);
+      $insert->bindParam(':remoteip', $ip, PDO::PARAM_INT);
+      $insert->bindParam(':remoteagent', $agent, PDO::PARAM_STR);
+      if (!$insert->execute()) {
+        error_log('updatePage(): unable to insert revision --> FALSE');
+        $insert = null;
+        $this->dbh->rollback();
+        return false;
+      }
+      $insert = null;
+      $revid = $this->dbh->lastInsertId();
+      error_log("updatePage(): created new revision #$revid");
+      $update = $this->dbh->prepare("UPDATE `{$this->tablePrefix}pages` SET revision_id=:revid, has_changes='Y' WHERE id=:pageid");
+      $update->bindParam(':revid', $revid, PDO::PARAM_INT);
+      $update->bindParam(':pageid', $id, PDO::PARAM_INT);
+
+      if (!$update->execute()) {
+        error_log('updatePage(): unable to set pointer to newly created revision --> FALSE');
+        $update = null;
+        $this->dbh->rollback();
+        return false;
+      }
+
+      $update = null;
+    } else {
+      $revid = $row['revision_id'];
+      $update = $this->dbh->prepare("UPDATE `{$this->tablePrefix}revisions` ".
+                               "SET timestamp_change=:timestamp, content=:content, remote_ip=:remoteip, remote_agent=:remoteagent ".
+                               "WHERE id=:revid");
+      $update->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
+      $update->bindParam(':content', $content, PDO::PARAM_STR);
+      $update->bindParam(':remoteip', $ip, PDO::PARAM_INT);
+      $update->bindParam(':remoteagent', $agent, PDO::PARAM_STR);
+      $update->bindParam(':revid', $revid, PDO::PARAM_INT);
+      if (!$update->execute()) {
+        error_log('updatePage(): unable to update revision --> FALSE');
+        $update = null;
+        $this->dbh->rollback();
+        return false;
+      }
+      $update = null;
     }
 
-    return false;
+    error_log('updatePage(): page revision updated/created. --> TRUE');
+    $this->dbh->commit();
+    return true;
   }
 
   function closeConnection() {
-    mysql_close($this->dbh);
+    $this->dbh = null;
   }
 }
 ?>
