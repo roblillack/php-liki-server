@@ -3,8 +3,8 @@
 class bsLikiBackend {
   var $dbh;
   var $db_database;
-  var $db_user;
-  var $db_password;
+  var $db_user = false;
+  var $db_password = false;
   var $db_table = 'bsliki';
   var $tablePrefix = false;
 
@@ -13,7 +13,7 @@ class bsLikiBackend {
     
     if ($handle_ === false) {
       require("config.php");
-      if ($this->tablePrefix === false) {
+      if ($this->tablePrefix === false && $this->db_table !== false) {
         $this->tablePrefix = $this->db_table.'_';
       }
 
@@ -103,6 +103,10 @@ class bsLikiBackend {
     // unlock pages
     $s = $this->dbh->prepare("UPDATE `$pages` SET lockkey='' WHERE ".
                              "(timestamp_lock < :timestamp) AND lockkey != ''");
+    if (!$s) {
+      $err = $this->dbh->errorInfo();
+      die($err[2]);
+    }
     $s->bindParam(':timestamp', $timestamp, PDO::PARAM_INT);
     $s->execute();
     $s = null;
