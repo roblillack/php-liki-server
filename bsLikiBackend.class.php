@@ -337,6 +337,7 @@ class bsLikiBackend {
     return $list;
   }
 
+  // convert to PDO
   function getPageList() {
     $res = $this->dbh->Execute("SELECT name FROM {$this->pagesTable} ".
                                "ORDER BY name ASC");
@@ -351,6 +352,7 @@ class bsLikiBackend {
   }
   
   // TODO: lists history...
+  // convert to PDO
   function getPagesContaining($what) {
     // FIXME: how do we escape correctly using ADOdb?
     $what = $this->cleanPageName($what);
@@ -371,17 +373,22 @@ class bsLikiBackend {
   }
   
   function getPageNamesContaining($what) {
-    $what = $this->cleanPageName($what);
-    $res = $this->dbh->Execute("SELECT name FROM {$this->pagesTable} ".
-                               "WHERE name like '%$what%' ".
-                               "ORDER BY name ASC");
-    if (!$res) {
-      die("could not get page list: ".mysql_error());
+    $what = '%'.$this->cleanPageName($what).'%';
+    $s = $this->dbh->prepare("SELECT name FROM {$this->pagesTable} ".
+                             "WHERE name LIKE :what ".
+                             "ORDER BY name ASC");
+    $s->bindParam(':what', $what, PDO::PARAM_STR);
+    if ($s->execute() === false) {
+      $s = null;
+      $err = $this->dbh->errorInfo();
+      error_log('getPageNamesContaining(): '.$err[2]);
       return false;
     }
     $pages = array();
-    while ($r = $res->FetchRow()) $pages[] = $r[0];
-    $res->Close();
+    while ($r = $s->fetch()) {
+      $pages[] = $r['name'];
+    }
+    $s = null;
     return $pages;
   }
   
@@ -396,6 +403,7 @@ class bsLikiBackend {
     return $r;
   }
   
+  // convert to PDO
   function getRevision($rev) {
     $this->autoFree();
     $p = "{$this->pagesTable}";
@@ -486,6 +494,7 @@ class bsLikiBackend {
   }
 
   // TODO: manually calculate sums of special pages.
+  // convert to PDO
   function getPageMD5($page) {
     $q = "SELECT MD5(TRIM(content)) AS md5 ".
          "FROM {$this->tablePrefix}revisions AS R, {$this->tablePrefix}pages AS P ".
