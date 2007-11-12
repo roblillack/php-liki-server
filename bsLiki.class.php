@@ -100,6 +100,20 @@ class bsLiki {
   }
 
   function sendRSSFeed() {
+    // load dns cache
+    if (!file_exists($this->dataDir.'/_DNSCACHE_')) {
+      $dnscache = array();
+    } else {
+      $dnscache = unserialize(implode('', file($this->dataDir.'/_DNSCACHE_')));
+    }
+    // remove entries older than a day
+    $yesterday = time() - 60*60*24;
+    foreach ($dnscache as $key => $r) {
+      if ($r['written'] < $yesterday) {
+        array_splice($dnscache, $key, 1);
+      }
+    }
+    
     // still does not work with splitting at every char, because of encoding trouble :(
     $splitAtSpaces = true;
     header('Content-type: text/xml; charset=UTF-8');
@@ -163,7 +177,7 @@ class bsLiki {
         echo "   <title>" . htmlspecialchars($e['name']. " (~$linesModified -$linesDeleted +$linesInserted)") . "</title>\n";
         echo "   <description><![CDATA[$changelog]]></description>\n";
 
-        $author = encodeLongIP($e['remote_ip']);
+        $author = encodeLongIP($e['remote_ip'], $dnscache);
         echo "   <author>" .htmlspecialchars($author). "</author>\n";
         echo "   <guid isPermaLink='true'>" . htmlspecialchars($this->baseUrl.'/permalink/'.$e['revision_id']) . "</guid>\n";
         echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
@@ -175,6 +189,12 @@ class bsLiki {
     }
     echo ' </channel>' . "\n";
     echo '</rss>' . "\n";
+    flush();
+
+    $tmpName = $this->dataDir.'/_DNSCACHE_'.md5(uniqid());
+    if (file_put_contents($tmpName, serialize($dnscache)) !== FALSE) {
+      rename($tmpName, $this->dataDir.'/_DNSCACHE_');
+    }
   }
 
 
@@ -771,10 +791,24 @@ function diff($old, $new){
       diff(array_slice($old, $omax + $maxlen), array_slice($new, $nmax + $maxlen)));
 } 
 
-function encodeLongIP($ip) {
+function encodeLongIP($ip, array &$dnscache = NULL) {
   if ($ip == 0) return "unknown";
 
-  $host = gethostbyaddr(long2ip($ip));
+  $host = NULL;
+  if ($dnscache !== NULL) {
+    error_log("have dns cache with ".count($dnscache)." entries...");
+    if (array_key_exists($ip, $dnscache)) {
+      error_log("found $ip in dnscache!");
+      $host = $dnscache[$ip]['host'];
+    }
+  }
+  if (!$host) {
+    error_log("checking $ip...");
+    $host = gethostbyaddr(long2ip($ip));
+    if ($dnscache !== NULL) {
+      $dnscache[$ip] = array('host' => $host, 'written' => time());
+    }
+  }
   $hostarray = explode('.', $host);
   if ($ip == $host) {
     $hostarray[3] = "~".substr(md5($ip), -8);

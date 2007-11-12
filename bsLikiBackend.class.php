@@ -337,17 +337,11 @@ class bsLikiBackend {
     return $list;
   }
 
-  // convert to PDO
   function getPageList() {
-    $res = $this->dbh->Execute("SELECT name FROM {$this->pagesTable} ".
-                               "ORDER BY name ASC");
-    if (!$res) {
-      trigger_error("could not get page list");
-      return false;
-    }
     $pages = array();
-    while ($r = $res->FetchRow()) $pages[] = $r[0];
-    $res->Close();
+    foreach ($this->dbh->query("SELECT name FROM {$this->pagesTable} ORDER BY name ASC") as $r) {
+      $pages[] = $r[0];
+    }
     return $pages;
   }
   
@@ -615,6 +609,35 @@ class bsLikiBackend {
     }
 
     error_log('updatePage(): page revision updated/created. --> TRUE');
+    $this->dbh->commit();
+    return true;
+  }
+
+  function deletePage($page) {
+    $page = $this->cleanPageName($page);
+    // TODO: implement
+  }
+
+  function expungePage($page) {
+    $page = $this->cleanPageName($page);
+    $delRevs = $this->dbh->prepare("DELETE FROM {$this->revsTable} WHERE page_id=(SELECT id FROM {$this->pagesTable} WHERE name=:page)");
+    $delPage = $this->dbh->prepare("DELETE FROM {$this->pagesTable} WHERE name=:page");
+    $delRevs->bindParam(':page', $page, PDO::PARAM_STR);
+    $delPage->bindParam(':page', $page, PDO::PARAM_STR);
+    $this->dbh->beginTransaction();
+    if ($delRevs->execute() === false) {
+      $delRevs = null;
+      $delPage = null;
+      $this->dbh->rollback();
+      return false;
+    }
+    $delRevs = null;
+    if ($delPage->execute() == false) {
+      $delPage = null;
+      $this->dbh->rollback();
+      return false;
+    }
+    $delPage = null;
     $this->dbh->commit();
     return true;
   }
