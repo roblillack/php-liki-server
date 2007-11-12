@@ -118,8 +118,9 @@ class bsLiki {
     $splitAtSpaces = true;
     header('Content-type: text/xml; charset=UTF-8');
     echo '<' . '?' .'xml version="1.0" encoding="UTF-8"' . '?' . '>' . "\n";
-    echo '<rss version="2.0">' . "\n";
+    echo '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">' . "\n";
     echo " <channel>\n";
+    echo "  <atom:link href=\"".htmlspecialchars($this->baseUrl.'/?action=feed', ENT_QUOTES)."\" rel=\"self\" type=\"application/rss+xml\" />\n";
     echo "  <title>Changelog for &#x201c;{$this->likiTitle}&#x201d;</title>\n";
     echo "  <link>".htmlspecialchars($this->baseUrl, ENT_QUOTES)."</link>\n";
     echo "  <description>An automatic log of changes to the Liki.</description>\n";
@@ -178,7 +179,8 @@ class bsLiki {
         echo "   <description><![CDATA[$changelog]]></description>\n";
 
         $author = encodeLongIP($e['remote_ip'], $dnscache);
-        echo "   <author>" .htmlspecialchars($author). "</author>\n";
+        //echo "   <author>" .htmlspecialchars($author). "</author>\n";
+        echo "   <dc:creator>" .htmlspecialchars($author). "</dc:creator>\n";
         echo "   <guid isPermaLink='true'>" . htmlspecialchars($this->baseUrl.'/permalink/'.$e['revision_id']) . "</guid>\n";
         echo "   <link>" . htmlspecialchars($this->baseUrl.'/'.urlencode($e['name'])) . "</link>\n";
         echo "   <pubDate>" . date("r", $e['timestamp']) . "</pubDate>\n";
