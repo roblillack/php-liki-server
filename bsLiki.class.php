@@ -220,11 +220,25 @@ class bsLiki {
 
   function createSearchPage($search) {
     $index = "# Search for \"".htmlentities($search)."\"\n";
+    $index .= "* Page Names\n";
     $list = $this->backend->getPageNamesContaining($search);
     if ($list !== false)
       foreach ($list as $i)
         $index .= "- [$i]\n";
-    return $index;
+
+    $index .= "* Page Content\n";
+    $list = $this->backend->getPagesContaining($search);
+    if ($list !== false) foreach ($list as $i) {
+      $str = "";
+      if (($pos = stripos($i['content'], $search)) !== false) {
+        $str = '...' . substr($i['content'], max($pos-50, 0), strlen($search)+100) . '...';
+        $str = str_replace(array("\n", "\r\n", "\r"), "", $str);
+        $str = htmlspecialchars($str);
+        $str = str_ireplace($search, "<b>$search</b>", $str);
+      } 
+      $index .= "- [{$i['name']}]\n! $str\n";
+    }
+     return $index;
   }
 
   function createPictureIndex($deleted = false) {
@@ -716,9 +730,9 @@ class bsLiki {
       echo $t;
       $this->quit();
     } elseif ($this->getRequest('action') == 'getmd5') {
-      if ($md5 = $this->backend->getPageMD5($this->activePage)) {
+      if ($p = $this->backend->getPage($this->activePage)) {
         header('Content-type: text/plain; charset=UTF-8');
-        echo $md5;
+        echo md5($p['content']);
       } else {
         header("HTTP/1.1 400 Error getting MD5 sum of page");
       }

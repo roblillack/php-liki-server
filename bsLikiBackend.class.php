@@ -145,7 +145,7 @@ class bsLikiBackend {
                  aber: _kein_ lock beim autofree -- seiten werden nur noch freigegeben, revisionen nicht angeruehrt! */
     $timestamp = time() - 180;
     // unlock pages
-    $s = $this->dbh->prepare("UPDATE {$this->pagesTable} SET lockkey='' WHERE ".
+    $s = $this->dbh->prepare("UPDATE {$this->pagesTable} SET lockkey='', has_changes='N' WHERE ".
                              "(timestamp_lock < :timestamp) AND lockkey != ''");
     if (!$s) {
       $err = $this->dbh->errorInfo();
@@ -261,13 +261,16 @@ class bsLikiBackend {
   
   function getDetailedChangeLog($count = 10) {
     $this->autoFree();
+    $before_id = "IFNULL((SELECT C.id FROM {$this->revsTable} AS C ".
+             "WHERE C.id < A.id AND C.page_id=A.page_id ORDER BY C.id DESC LIMIT 1), 0)";
     $before = "IFNULL((SELECT content FROM {$this->revsTable} AS C ".
              "WHERE C.id < A.id AND C.page_id=A.page_id ORDER BY C.id DESC LIMIT 1), '')";
     $q = "SELECT content AS `content_after`, ".
          "$before AS `content_before`, ".
+         "$before_id AS `before_id`, ".
          "remote_ip, remote_agent, ".
          "timestamp_change AS timestamp, ".
-         "name, A.id AS revision_id ".
+         "name, A.id AS revision_id, B.id as page_id ".
          "FROM {$this->revsTable} AS A,{$this->pagesTable} AS B ".
          "WHERE A.page_id=B.id AND A.timestamp_change IS NOT NULL ".
          "ORDER BY A.timestamp_change DESC ".
@@ -345,24 +348,22 @@ class bsLikiBackend {
     return $pages;
   }
   
-  // TODO: lists history...
-  // convert to PDO
   function getPagesContaining($what) {
-    // FIXME: how do we escape correctly using ADOdb?
-    $what = $this->cleanPageName($what);
-    $res = $this->dbh->Execute("SELECT name, content, timestamp_change, timestamp_visit ".
-                               "FROM {$this->pagesTable} AS P, ".
-                               "{$this->revsTable} AS R ".
-                               "WHERE R.page_id=P.id AND content like '%$what%' ".
-                               "OR name like '%$what%' ".
-                               "ORDER BY name ASC");
-    if (!$res) {
-      trigger_error("could not get page list");
+    $what = '%'.$this->cleanPageName($what).'%';
+    $s = $this->dbh->prepare("SELECT name, content, timestamp_change, timestamp_visit ".
+                             "FROM {$this->pagesTable} AS P, ".
+                             "{$this->revsTable} AS R ".
+                             "WHERE R.id=P.revision_id AND content LIKE :what ".
+                             "ORDER BY name ASC");
+    $s->bindParam(':what', $what, PDO::PARAM_STR);
+    if ($s->execute() === false) {
+      $s = null;
+      $err = $this->dbh->errorInfo();
+      error_log('getPagesContaining(): '.$err[2]);
       return false;
     }
-    $pages = array();
-    while ($r = $res->FetchRow()) $pages[] = $r;
-    $res->Close();
+    $pages = $s->fetchAll();
+    $s = null;
     return $pages;
   }
   
@@ -397,26 +398,26 @@ class bsLikiBackend {
     return $r;
   }
   
-  // convert to PDO
   function getRevision($rev) {
     $this->autoFree();
-    $p = "{$this->pagesTable}";
-    $r = "{$this->revsTable}";
-    $res = $this->dbh->Execute("SELECT content,timestamp_change FROM $r ".
-                               "WHERE id=?", array($rev));
-    if (!$res) {
-      trigger_error("could not get content of page $page");
+    $s = $this->dbh->prepare("SELECT name, content, timestamp_change ".
+                             "FROM {$this->pagesTable} AS p, {$this->revsTable} AS r ".
+                             "WHERE r.id=:rev AND p.id=r.page_id");
+    $s->bindParam(':rev', $rev, PDO::PARAM_INT);
+    if ($s->execute() === false) {
+      $s = null;
+      $err = $this->dbh->errorInfo();
+      error_log('getRevision(): '.$err[2]);
       return false;
     }
-    if ($res->RecordCount() != 1) {
-      // page does not exist
-      return array('name'             => $page,
-                   'content'          => '',
-                   'timestamp_change' => 1);
-    }
-    $r = $res->FetchRow();
-    $res->Close();
 
+    if (($r = $s->fetch()) === false) {
+      return array('name'             => '',
+                   'content'          => '',
+                   'timestamp_change' => 0);
+    }
+
+    $s = null;
     return $r;
   }
    
@@ -487,25 +488,6 @@ class bsLikiBackend {
     return true;
   }
 
-  // TODO: manually calculate sums of special pages.
-  // convert to PDO
-  function getPageMD5($page) {
-    $q = "SELECT MD5(TRIM(content)) AS md5 ".
-         "FROM {$this->tablePrefix}revisions AS R, {$this->tablePrefix}pages AS P ".
-         "WHERE revision_id=R.id AND name=?";
-    $res = $this->dbh->Execute($q, array($this->cleanPageName($page)));
-    if (!$res) {
-      error_log("error executing: $q");
-      return false;
-    }
-    if (!$res || $res->RecordCount() != 1) {
-      return false;
-    }
-    $r = $res->FetchRow();
-    $res->Close();
-    return $r['md5'];
-  }
- 
   function updatePage($page, $key, $content) {
     error_log("updatePage($page, $key)");
     $page = $this->cleanPageName($page);
