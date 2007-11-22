@@ -17,12 +17,16 @@ class bsLiki {
   var $maximalPictureWidth = false;
   var $likiTitle = 'The Liki';
 
-  function sendHeaders() {
+  function noCache() {
     header("Content-type: text/html; charset=UTF-8");
     header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
     header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
     header("Cache-Control: no-cache, must-revalidate");
     header("Pragma: no-cache");
+  }
+
+  function sendHeaders() {
+    $this->noCache();
     echo('<'.'?'.'xml version="1.0" encoding="utf-8" '.'?'.">\n");
     echo("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" ".
          "\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">\n");
@@ -60,6 +64,7 @@ class bsLiki {
   }
 
   function sendRecentChangesHeader() {
+    $this->noCache();
     $str = "";
     $changes = $this->backend->getRecentChanges(10);
     if ($changes) {
@@ -732,6 +737,7 @@ class bsLiki {
       $this->quit();
     } elseif ($this->getRequest('action') == 'getmd5') {
       if ($p = $this->backend->getPage($this->activePage)) {
+        $this->noCache();
         header('Content-type: text/plain; charset=UTF-8');
         echo md5($p['content']);
       } else {
