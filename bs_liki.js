@@ -212,6 +212,10 @@ function formatContent(input) {
       case 'radio':
         input += '<div><tt>(&nbsp;)&nbsp;</tt>' + formatParagraph(content) + '</div>';
         break;
+      case 'imagelink':
+        matches = content.match(/^\[(\S+)\s+(\S+)\]\s*$/)
+        input += '<a href="' + matches[1] + '"><img src="' + matches[2] + '" alt="" class="centerpic" /></a>\n';
+        break;
       case 'image':
         input += '<img src="' + content + '" alt="" class="centerpic" />\n';
         break;
@@ -246,6 +250,7 @@ function getParagraphType(p) {
   else if (p.match(/^\( \) .*$/i)) return 'radio';
   else if (p.match(/^\[(X|\*)\] .*$/i)) return 'check-checked';
   else if (p.match(/^\((X|\*)\) .*$/i)) return 'radio-checked';
+  else if (p.match(/^\[http\:\/\/[^\s\"\']+\s+http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\]\s*$/i)) return 'imagelink';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\s*$/i)) return 'image';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(mp3|ogg|aac|mpc|wma)\s*$/i)) return 'music';
   else if (p.match(/^http\:\/\/[^\s\"\']+\.(avi|mpg|wmv|mov|asf|flv)\s*$/i)) return 'video';
@@ -290,8 +295,8 @@ function formatParagraph(p) {
   // externe links
   p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/g, '$1<a class="external" href="$2">$2</a>');
   // externe links (mit text)
-  p = p.replace(/\[(http\:\/\/[\S]+)\]/g, '<a class="external" href="$1">$1</a>');
-  p = p.replace(/\[(http\:\/\/[\S]+)\ ([\S][\S\ ]*?[\S]+)\]/g, '<a class="external" href="$1">$2</a>');
+  p = p.replace(/\[(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)\]/g, '<a class="external" href="$1">$1</a>');
+  p = p.replace(/\[(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)\s+([^\[\]]+)\]/g, '<a class="external" href="$1">$2</a>');
   // liki-seiten
   p = p.replace(/\[\[?([^\'\"\]\[\%\s\/\\]+)\]?\]/g,
                 '<a class="internal" href="' + baseURI + '/$1">$1</a>');

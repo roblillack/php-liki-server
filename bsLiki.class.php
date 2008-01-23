@@ -309,6 +309,7 @@ class bsLiki {
   function getParagraphType($content) {
     if (preg_match('/^[\#\*\-\+\"\'\;\|\!] /', $content)) return $content[0];
     else if (preg_match('/^---+\s*$/', $content)) return 'line';
+    else if (preg_match('/^\[http\:\/\/[^\s\"\']+\s+http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\]\s*$/i', $content)) return 'imagelink';
     else if (preg_match('/^http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\s*$/i', $content)) return 'image';
     else if (preg_match('/^http\:\/\/[^\s\"\']+\.(mp3|ogg|aac|mpc|wma)\s*$/i', $content)) return 'music';
     else if (preg_match('/^http\:\/\/[^\s\"\']+\.(avi|mpg|wmv|mov|asf|flv)\s*$/i', $content)) return 'video';
@@ -412,6 +413,11 @@ class bsLiki {
           break;
         case '|':
           $output .= '<p style="text-align: center;">' . $this->formatParagraph($content) . "</p>\n";
+          break;
+        case 'imagelink':
+          $matches = preg_match('/.*(ht.p).*/i', $content);
+          $matches = explode(' ', $content);
+          $output .= '<a href="' . substr($matches[0], 1) . '"><img src="' . substr($matches[1], 0, -1) . '" alt="" class="centerpic" /></a>'."\n";
           break;
         case 'image':
           $output .= '<img src="' . $content . '" alt="" class="centerpic" />'."\n";
