@@ -103,6 +103,26 @@ class bsLiki {
     }
     return true;
   }
+  
+  function trimDown($string, $max_length) {
+    if (strlen($string) > $max_length){
+	  $string = substr($string, 0, $max_length);
+	  $pos = strrpos($string, " ");
+	  if($pos === false) {
+	    return substr($string, 0, $max_length)."...";
+	  }
+	  return substr($string, 0, $pos)."...";
+    } else {
+	  return $string;
+    }
+  }
+  
+  /*TODO: function wrapLikiLine($string, $max_length) {
+    $output = "";
+    
+    foreach ($string as $i => $c) {
+    }
+  }*/
 
   function sendRSSFeed() {
     // load dns cache
@@ -121,6 +141,7 @@ class bsLiki {
     
     // still does not work with splitting at every char, because of encoding trouble :(
     $splitAtSpaces = true;
+    //header('Content-type: text/plain; charset=UTF-8');
     header('Content-type: text/xml; charset=UTF-8');
     echo '<' . '?' .'xml version="1.0" encoding="UTF-8"' . '?' . '>' . "\n";
     echo '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">' . "\n";
@@ -132,20 +153,52 @@ class bsLiki {
     //echo "  <language>$lang</language>\n";
     //echo "  <copyright>$copyright</copyright>\n";
     //echo "  <pubDate>$pubDate</pubDate>\n";
+    
     if ($log = $this->backend->getDetailedChangeLog(30)) foreach ($log as $e) {
-      $changelog = "";
+      $changelog = "<div style='font-family:Monaco,monospace; line-height: 12px; font-size: 10px; white-space:wrap; color:black;'>";
       $linesModified = 0;
       $linesDeleted = 0;
       $linesInserted = 0;
-      $linediff = diff(explode("\n", $e['content_before']), explode("\n", $e['content_after']));
+      $ld = diff(explode("\n", $e['content_before']), explode("\n", $e['content_after']));
+      $linediff = array();
+      foreach ($ld as $n => $cs) {
+      	if (is_array($cs) && count($cs['d']) == 0 && count($cs['i']) == 0) {
+      	  // ignore
+      	  continue;
+        }
+        $linediff[$n] = $cs;
+      }
+      
       foreach ($linediff as $number => $changeset) {
-        if (!is_array($changeset)) continue;
-        $before = !empty($changeset['d']) ? str_replace("\n", "&#x23ce;<br />\n", htmlspecialchars(implode("\n", $changeset['d']))) : "";
-        $after = !empty($changeset['i']) ? str_replace("\n", "&#x23ce;<br />\n", htmlspecialchars(implode("\n", $changeset['i']))) : "";
+        // this line is unchanged, but a changeset is nearby
+      	if (!is_array($changeset) && $changeset !== false) {
+      	  for ($i = -5; $i < 6; $i++) {
+      	    if ($i == 0) continue;
+            if ((array_key_exists($number + $i, $linediff) && is_array($linediff[$number + $i]))) {
+              $changelog .= "<p style='margin:0;padding-left:12px;color:#555;'>".htmlspecialchars($this->trimDown($changeset, 70))."&nbsp;</p>\n";
+              // mark it, so we don't output it two times
+              $changeset = false;
+            }
+      	  }
+      	  continue;
+      	}
+
         $mod = min(count($changeset['d']), count($changeset['i']));
         $linesDeleted += count($changeset['d']) - $mod;
         $linesInserted += count($changeset['i']) - $mod;
         $linesModified += $mod;
+      	
+      	// only some lines added or removed
+      	if (count($changeset['d']) == 0 || count($changeset['i']) == 0) {
+      	  foreach ($changeset['d'] as $line) $changelog .= "<p style='margin:0;padding-left:10px;border-left:2px solid red;color:#aaa;'>".htmlspecialchars($line)."&nbsp;</p>\n";
+      	  foreach ($changeset['i'] as $line) $changelog .= "<p style='margin:0;padding-left:10px;border-left:2px solid green;color:black;'>".htmlspecialchars($line)."&nbsp;</p>\n";
+      	  continue;
+      	}
+
+        // more complex stuff for changed lines
+		$before = str_replace("\n", "&nbsp;<br />\n", htmlspecialchars(implode("\n", $changeset['d'])));
+		$after = str_replace("\n", "&nbsp;<br />\n", htmlspecialchars(implode("\n", $changeset['i'])));
+
         $paragraph = "";
         if ($splitAtSpaces) {
           $before_array = explode(" ", $before);
@@ -158,27 +211,17 @@ class bsLiki {
         }
         foreach (diff($before_array, $after_array) as $d) {
           if (is_array($d)) {
-            $paragraph .= !empty($d['d']) ? "<s style='background-color:#fdd;'>" . implode($splitChar, $d['d']) . "</s>" . $splitChar : '';
-            $paragraph .= !empty($d['i']) ? "<b style='background-color:#dfd;'>" . implode($splitChar, $d['i']) . "</b>" . $splitChar : '';
+            $paragraph .= !empty($d['d']) ? "<span style='background-color:#fdd;color:#aaa;'>" . implode($splitChar, $d['d']) . "</span>" . $splitChar : '';
+            $paragraph .= !empty($d['i']) ? "<span style='background-color:#dfd;color:black;'>" . implode($splitChar, $d['i']) . "</span>" . $splitChar : '';
           } else {
             $paragraph .= $d . $splitChar;
           }
         }
-        if (trim($paragraph) != "") {
-          for ($i = 3; $i >= 1; $i--) {
-            if (array_key_exists($number - $i, $linediff) && !is_array($linediff[$number - $i])) {
-              $paragraph = htmlspecialchars($linediff[$number-$i])."<br />$paragraph";
-            }
-          }
-          for ($i = 1; $i <= 3; $i++) {
-            if (array_key_exists($number + $i, $linediff) && !is_array($linediff[$number+$i])) {
-              $paragraph .= "<br />" . htmlspecialchars($linediff[$number+$i]);
-            }
-          }
-          $changelog .= "<p>$paragraph</p>\n";
-        }
-      }
+		$changelog .= "<p style='padding-left:10px;border-left:2px dotted #555;color:#555;'>$paragraph&nbsp;</p>\n";
+	  }
+	  
       if ($changelog) {
+      	$changelog .= "</div>\n";
         echo "  <item>\n";
         echo "   <title>" . htmlspecialchars($e['name']. " (~$linesModified -$linesDeleted +$linesInserted)") . "</title>\n";
         echo "   <description><![CDATA[$changelog]]></description>\n";
