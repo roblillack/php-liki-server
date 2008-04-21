@@ -352,6 +352,10 @@ class bsLiki {
   function getParagraphType($content) {
     if (preg_match('/^[\#\*\-\+\"\'\;\|\!] /', $content)) return $content[0];
     else if (preg_match('/^---+\s*$/', $content)) return 'line';
+    else if (preg_match('/^\[ \] .*$/i', $content)) return 'check';
+	else if (preg_match('/^\( \) .*$/i', $content)) return 'radio';
+	else if (preg_match('/^\[(X|\*)\] .*$/i', $content)) return 'check-checked';
+	else if (preg_match('/^\((X|\*)\) .*$/i', $content)) return 'radio-checked';
     else if (preg_match('/^\[http\:\/\/[^\s\"\']+\s+http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\]\s*$/i', $content)) return 'imagelink';
     else if (preg_match('/^http\:\/\/[^\s\"\']+\.(bmp|gif|jpg|jpeg|png)\s*$/i', $content)) return 'image';
     else if (preg_match('/^http\:\/\/[^\s\"\']+\.(mp3|ogg|aac|mpc|wma)\s*$/i', $content)) return 'music';
@@ -361,7 +365,7 @@ class bsLiki {
 
   function cleanParagraph($content) {
     $content = preg_replace('/(^|\n)\ \ ([^\n]+)/', '$1$2', $content);
-    $content = preg_replace('/^[\#\*\-\+\"\'\;\|\!] /', '', $content);
+    $content = preg_replace('/^([\#\*\-\+\"\'\;\|\!]|\[(\ |X|x|\*)\]|\((\ |X|x|\*)\)) /', '', $content);
     return $content;
   }
 
@@ -410,7 +414,7 @@ class bsLiki {
     // one line paragraphs (i.e. section headings)
     $p = preg_replace('/(^|\n)([\#\*])\ ([^\n]+)/', "$1\n$2 $3\n", $p);
     // multiline paragraphs
-    $p = preg_replace('/(^|\n)([\-\+\"\'\;\|\!]\ ([^\n](\n\ [^\n]|[^\n])+))/', "\n$1$2\n", $p);
+    $p = preg_replace('/(^|\n)(([\-\+\"\'\;\|\!]|\[(\ |X|\*)\]|\((\ |X|\*)\))\ ([^\n](\n\ [^\n]|[^\n])+))/i', "\n$1$2\n", $p);
     // lines
     $p = preg_replace('/(^|\n)---+\ *\n/', "$1---\n\n", $p);
 
@@ -457,6 +461,18 @@ class bsLiki {
         case '|':
           $output .= '<p style="text-align: center;">' . $this->formatParagraph($content) . "</p>\n";
           break;
+        case 'check-checked':
+          $output .= '<div><tt>[X]&nbsp;</tt><s>' . $this->formatParagraph($content) . '</s></div>';
+          break;
+        case 'check':
+          $output .= '<div><tt>[&nbsp;]&nbsp;</tt>' . $this->formatParagraph($content) . '</div>';
+          break;
+        case 'radio-checked':
+          $output .= '<div><tt>(*)&nbsp;</tt><strong>' . $this->formatParagraph($content) . '</strong></div>';
+          break;
+        case 'radio':
+          $output .= '<div><tt>(&nbsp;)&nbsp;</tt>' . $this->formatParagraph($content) . '</div>';
+	      break;
         case 'imagelink':
           $matches = preg_match('/.*(ht.p).*/i', $content);
           $matches = explode(' ', $content);
