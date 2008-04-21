@@ -482,12 +482,12 @@ class bsLiki {
           $output .= '<img src="' . $content . '" alt="" class="centerpic" />'."\n";
           break;
         case 'music':
-          $matches = preg_match('/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i', $content);
-          $output .= '<p><a href="' . $content . '" class="music">' . $matches[1] . "</a></p>\n";
+          $output .= '<p><a href="' . preg_replace('/\s*/', '', $content) . '" class="music">' .
+                     preg_replace('/^.*\/[0-9]+-.+--/', '', $content) ."</a></p>\n";
           break;
         case 'video':
-          $matches = preg_match('/^.*\/[0-9]+-.+--([^\s\"\'\/]+\.([a-z0-9]+))\s*$/i', $content);
-          $output .= '<p><a href="' . $content . '" class="video">' .  $matches[1] . "</a></p>\n";
+          $output .= '<p><a href="' . preg_replace('/\s*/', '', $content) . '" class="video">' .
+                     preg_replace('/^.*\/[0-9]+-.+--/', '', $content) . "</a></p>\n";
           break;
         case 'line':
           $output .= "<hr />\n";
