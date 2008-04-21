@@ -28,6 +28,7 @@ var eRecentChanges;
 var eRecentVisits;
 var eUploadIFrame;
 var haveMSXML;
+var switchEditModeOnSuccessfulLoad;
 
 var lastContentEvent;
 //var lastContentCursorPosition;
@@ -344,6 +345,10 @@ function switchEditMode() {
   eEditButton.setAttribute('class', 'transmitting');
 
   if (editMode == false) {
+  	if (transmitting) {
+  		switchEditModeOnSuccessfulLoad = true;
+  		return;
+  	}
     // create lock request
     var req = createRequest();
     req.onreadystatechange = createRequestLockHandler(req);
@@ -510,6 +515,11 @@ function createLoadHandler(req/*, ts*/) {
           //lastTimestamp = req.responseXML.getElementsByTagName('timestamp')[0].firstChild.nodeValue;
           setStatus("Loaded.");
           /*setStatus("scroll: " + scroll1 + " / " + scroll2);*/
+          if (switchEditModeOnSuccessfulLoad) {
+          	transmitting = false;
+          	switchEditModeOnSuccessfulLoad = false;
+          	switchEditMode();
+          }
         }
       }
       transmitting = false;
@@ -531,6 +541,7 @@ function initLiki(u, t, readonly, query) {
   lastTimestamp = 0;
   transmitting = false;
   haveMSXML = false;
+  switchEditModeOnSuccessfulLoad = false;
 
   baseURI = mainURI.replace(/^(.*)\/.*\/?$/, '$1');
   
