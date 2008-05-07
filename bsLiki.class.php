@@ -641,12 +641,12 @@ class bsLiki {
     echo "  <meta name=\"copyright\" content=\"burningsoda.com\" />\n";*/
     echo "  <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" />\n";
     echo " </head>\n";
-    echo " <body class='loginpanel'>\n";
+    echo " <body class='loginpanel' onload='self.focus(); document.loginform.username.focus();'>\n";
     echo "  <div class='loginpanel'>\n";
     echo "   <h1>".$text."</h1>\n";
     //echo "   <h2>".$_SESSION['loggedin']."</h2>\n";
     //echo "   <h2>".session_id()."</h2>\n";
-    echo "   <form method='POST' action='".$this->baseUrl."/' >\n";
+    echo "   <form name='loginform' method='POST' action='".$this->baseUrl."/' >\n";
     echo "    <p>Username:</p>\n";
     echo "    <div><input type='text' name='username' value='' /></div>\n";
     echo "    <p>Password:</p>\n";
