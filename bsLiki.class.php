@@ -125,6 +125,21 @@ class bsLiki {
   }*/
 
   function sendRSSFeed() {
+	if ($this->passwordProtected) {
+		/* As there's no login panel for RSS feeds, we use HTTP Basic auth here. */
+		if (empty($this->username) || strlen($this->password) !== 32)
+			die("Username or Password misconfigured.");
+		if (!isset($_SERVER['PHP_AUTH_USER']) ||
+		    !isset($_SERVER['PHP_AUTH_PW']) ||
+		    $_SERVER['PHP_AUTH_USER'] !== $this->username ||
+		    md5($_SERVER['PHP_AUTH_PW']) !== $this->password) {
+			header('WWW-Authenticate: Basic realm="'.addslashes($this->likiTitle).'"');
+			header('HTTP/1.0 401 Unauthorized');
+			print("<html><h1>Access denied.</h1></html>\n");
+			$this->quit();
+		}
+	}
+
     // load dns cache
     if (!file_exists($this->dataDir.'/_DNSCACHE_')) {
       $dnscache = array();
@@ -327,21 +342,25 @@ class bsLiki {
   function getPage($page) {
     if (strtolower($page) == 'index') {
       $p = array('content' => $this->createIndexPage(),
+                 'lockkey' => true,
                  'timestamp_change' => time());
     } elseif (strtolower($page) == 'timeindex') {
       $p = array('content' => $this->createTimeIndexPage(),
+                 'lockkey' => true,
                  'timestamp_change' => time());
     } elseif (strtolower($page) == 'search') {
        $p = array('content' => $this->createSearchPage($this->getRequest("q", false)),
+                  'lockkey' => true,
                   'timestamp_change' => time());
     } elseif (strtolower($page) == 'pictureindex') {
-       $p = array('content' => $this->createPictureIndex(),'timestamp_change' => time());
+       $p = array('content' => $this->createPictureIndex(),'lockkey' => true, 'timestamp_change' => time());
     } elseif (strtolower($page) == 'deletedpictures') {
-      $p = array('content' => $this->createPictureIndex(true), 'timestamp_change' => time());
+      $p = array('content' => $this->createPictureIndex(true), 'lockkey' => true, 'timestamp_change' => time());
     } else {
       $p = $this->backend->getPage($page);
       if ($p === false) {
         $p = array('content'   => "# Error loading page $page",
+                   'locked' => true,
                    'timestamp_change' => '1');
       }
     }
@@ -633,7 +652,7 @@ class bsLiki {
     echo "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n";
     echo "<html>\n";
     echo " <head>\n";
-    echo "  <title>Liki Login</title>\n";
+    echo "  <title>Liki Login: ".$this->likiTitle."</title>\n";
     echo "  <link rel=\"stylesheet\" type=\"text/css\" href=\"".$this->baseUrl."/liki.css\" />\n";
     /*echo "  <meta name=\"description\" content=\"bs|area51.\" />\n";
     echo "  <meta name=\"author\" content=\"robert lillack &lt;rob@burningsoda.com&gt;\" />\n";
@@ -664,7 +683,15 @@ class bsLiki {
     if ($this->baseUrl === false) {
       die('No baseUrl configured.');
     }
-    
+
+	/* No need to set up a session if we're only
+	 * delivering a feed. (See there for authentication) */
+    if ($this->getRequest('action') == 'feed') {
+		$this->backend = new bsLikiBackend();
+		$this->sendRSSFeed();
+		$this->quit();
+    }
+
     if ($this->passwordProtected === true) {
       // ok, secure this one
       
@@ -681,7 +708,7 @@ class bsLiki {
       if ($_SESSION['loggedin'] == 'no') {
         // has no valid session
         
-        if (isset($_GET['action'])) {
+        if (isset($_GET['action'])) {      	
           // is an asynchronous request
           header("HTTP/1.0 401 Unauthorized");
           print("<html><h1>Access denied.</h1></html>\n");
@@ -722,11 +749,7 @@ class bsLiki {
       }
     }
 
-    if ($this->getRequest('action') == 'feed') {
-      $this->backend = new bsLikiBackend();
-      $this->sendRSSFeed();
-      $this->quit();
-    } elseif ($this->getRequest('action') == 'permalink') {
+	if ($this->getRequest('action') == 'permalink') {
       $this->activePage = '';
       $this->permalinkMode = true;
       $this->permalinkRevision = $this->getRequest('revision');
@@ -780,6 +803,8 @@ class bsLiki {
       if (!$this->specialPage)
         $this->backend->visitPage($this->activePage);
       header('X-LIKI-Timestamp: '.$p['timestamp_change']);
+      if ($p['lockkey'] === true || strlen($p['lockkey']) > 5)
+        header('X-LIKI-Locked: yes');
       header('Content-type: text/html; charset=UTF-8');
       // this is just a fix for a safari/konqueror bug.
       // the client MUST kill this line!
@@ -884,14 +909,14 @@ function encodeLongIP($ip, array &$dnscache = NULL) {
 
   $host = NULL;
   if ($dnscache !== NULL) {
-    error_log("have dns cache with ".count($dnscache)." entries...");
+    //error_log("have dns cache with ".count($dnscache)." entries...");
     if (array_key_exists($ip, $dnscache)) {
-      error_log("found $ip in dnscache!");
+      //error_log("found $ip in dnscache!");
       $host = $dnscache[$ip]['host'];
     }
   }
   if (!$host) {
-    error_log("checking $ip...");
+    //error_log("checking $ip...");
     $host = gethostbyaddr(long2ip($ip));
     if ($dnscache !== NULL) {
       $dnscache[$ip] = array('host' => $host, 'written' => time());
