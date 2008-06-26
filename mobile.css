@@ -1,0 +1,212 @@
+body {
+  	margin: 0;
+	padding: 0;
+	margin: 10px;
+	background-color: rgb(197,204,211);	 /* Set the page color to light blue */
+	-webkit-text-size-adjust:none;		  /* Turn off font resizing */
+}
+
+table {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+th {
+  padding: 5px;
+  padding-left: 20px;
+  padding-right: 20px;
+  background-color: #555;
+  color: white;
+}
+
+/*a.internal:before {
+  content: '[';
+  color: #ccc;
+}
+
+a.internal:after {
+  content: ']';
+  color: #ccc;
+}*/
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+
+a.external:before {
+  /* u+221e: INFINITY */
+  content: '\221e';
+  color: #55a;
+  text-decoration: none;
+}
+
+a.music:before {
+  /* U+266B BEAMED EIGHTH NOTES */
+  content: '\266b';
+  color: black;
+  font-size: 150%;
+  margin-right: 5px;
+}
+
+a.music {
+  text-decoration: none;
+  border-bottom: 1px solid #ccc;
+}
+
+a.music:hover {
+  border-bottom-color: red;
+}
+
+/* IPHONE STYLEZ */
+
+#viewcontent {
+  margin: 0;
+  padding: 0;
+}
+
+#viewcontent > h1,
+#viewcontent > h2,
+a#likititle {
+	display: block;
+	margin: 0;
+	padding: 10px;
+	
+	font-size: 17px;
+	font-family: Helvetica;
+	font-weight: bold;
+	color: rgb(76,86,108);	 /* Set each label color */	
+}
+
+#viewcontent > h1 {
+	font-weight: bold;
+	padding: 10px 0;
+	color: black;
+	text-align: center;
+}
+
+
+#viewcontent > h1 + h1,
+#viewcontent > h2 + h2 {
+	border-top: 1px dashed white;
+}
+
+#viewcontent hr {
+  height: 0;
+  border: 0;
+  border-top: 1px solid rgb(217,217,217);
+}
+
+#viewcontent hr:first-child,
+#viewcontent hr:last-child {
+  border: 0;
+}
+
+
+#viewcontent span.section
+{
+  display: block;
+  padding: 0;
+  margin: 0 0 17px 0px;
+	
+  font-size:17px;
+  font-family: Helvetica;
+  font-weight:normal;
+  color:black;
+	
+  /*width: 290px;*/
+  background-color: white;       /* Each list has a white background fill */
+	
+  border-width: 1px;		       /* Draw a rectangle around each list */
+  border-style:solid ;
+  border-color:rgb(217,217,217);
+	
+  -webkit-border-radius: 8px;		 /* Round each corner of the created rectangle */
+  overflow: hidden;
+}
+
+.section > ol,
+.section > p,
+.section > ul
+{
+	list-style-type: none;
+	
+	border: 0;
+	margin: 0;
+
+	padding: 10px 10px 14px 10px;	  
+}
+
+.section > ol:first-child,
+.section > p:first-child,
+.section > ul:first-child
+{
+}
+
+.section > ul > li {
+	padding-left: 20px;
+	text-indent: -20px;
+}
+
+
+.section > ul.radio > li:before,
+.section > ul.check > li:before {
+	content: '[ ]';
+	font-family: monospace;
+	color: #555;
+	margin-right: 5px;
+}
+
+.section > ul.check > li.checked:before {
+	content: '[X]';
+}
+
+.section > ul.radio > li.unchecked:before {
+	content: '( )';
+}
+
+.section > ul.radio > li.checked:before {
+	content: '(X)';
+}
+
+
+.section > blockquote,
+.section > pre
+{
+	list-style-type: none;
+	
+	border: 1px solid rgb(217,217,217);
+	-webkit-border-radius: 4px;
+	padding: 10px;
+	margin: 5px;
+}
+
+.section > blockquote,
+.section > pre {
+  color: #555;
+  background-color: #ffe;
+}
+
+.section > blockquote.comment {
+  background-color: #dfd;
+  font-style: italic;
+}
+
+.section > pre {
+  font-family: monospace;
+  background-color: #eef;
+}
+
+.section .centerpic {
+	margin: 5px auto;
+	text-align: center;
+	display: block;
+	max-width: 284px;
+	border: 2px solid rgb(217,217,217);
+	-webkit-border-radius: 4px;
+	overflow: hidden;
+}
+
+.section a .centerpic {
+	border: 2px solid blue;
+}

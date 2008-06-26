@@ -19,7 +19,10 @@ $l->sendHeaders();
  <head>
   <title><?=htmlspecialchars($l->likiTitle)?>: <?=htmlspecialchars($l->activePage)?></title>
   <?php if (!$l->legacyMode) { ?><script type="text/javascript" src="<?php echo $l->baseUrl;?>/bs_liki.js"></script><?php } ?>
-  <link rel="stylesheet" type="text/css" href="<?php echo $l->baseUrl;?>/liki.css" />
+  <!--<link rel="stylesheet" media="screen and (min-device-width: 481px)" type="text/css" href="<?php echo $l->baseUrl;?>/liki.css" />
+  <link rel="stylesheet" media="only screen and (max-device-width: 480px)" type="text/css" href="<?php echo $l->baseUrl;?>/mobile.css" />-->
+  <link rel="stylesheet" type="text/css" href="<?php echo $l->baseUrl;?>/mobile.css" />
+  <meta name="viewport" content="width=device-width, user-scalable=no" />
   <link rel="icon" href="favicon.ico" type="image/ico" />
   <link rel="Shortcut Icon" type="image/x-icon" href="<?php echo $l->baseUrl;?>/favicon.ico" />
   <link rel="alternate" type="application/rss+xml" title="RSS" href="<?php echo $l->baseUrl;?>/?action=feed" />

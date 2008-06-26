@@ -440,10 +440,24 @@ class bsLiki {
     $p = preg_replace('/^\s*/', '', $p);
     $paragraphs = preg_split('/\n\s*\n/', $p);
     $output = "";
+    $insidesection = false;
     for ($i = 0; $i < count($paragraphs); $i++) {
       $p = $paragraphs[$i];
       $type = $this->getParagraphType($p);
       $content = $this->cleanParagraph($p);
+      
+      if ($type == '*' || $type == '#') {
+      	if ($insidesection) {
+	      $output .= "</span>\n";
+	      $insidesection = false;
+	    }
+      } else {
+        if (!$insidesection) {
+          $output .= "<span class='section'>\n";
+          $insidesection = true;
+        }
+      }
+          
       switch ($type) {
         case '':
           // normal text paragraphs
@@ -480,17 +494,37 @@ class bsLiki {
         case '|':
           $output .= '<p style="text-align: center;">' . $this->formatParagraph($content) . "</p>\n";
           break;
-        case 'check-checked':
-          $output .= '<div><tt>[X]&nbsp;</tt><s>' . $this->formatParagraph($content) . '</s></div>';
+        case 'check': case 'check-checked':
+          $prev = $this->getParagraphType($paragraphs[$i-1]);
+          $next = $this->getParagraphType($paragraphs[$i+1]);
+          if ($i == 0 || ($prev != 'check' && $prev != 'check-checked')) {
+            $output .= "<ul class='check'>\n";
+          }
+          
+          $output .= " <li class=";
+          if ($type == 'check-checked') $output .= '"checked"';
+          else $output .= '"unchecked"';
+          $output .= ">" . $this->formatParagraph($content) . "</li>\n";
+          
+          if ($i == count($paragraphs) - 1 || ($next != 'check' && $next != 'check-checked')) {
+            $output .= "</ul>\n";
+          }
           break;
-        case 'check':
-          $output .= '<div><tt>[&nbsp;]&nbsp;</tt>' . $this->formatParagraph($content) . '</div>';
-          break;
-        case 'radio-checked':
-          $output .= '<div><tt>(*)&nbsp;</tt><strong>' . $this->formatParagraph($content) . '</strong></div>';
-          break;
-        case 'radio':
-          $output .= '<div><tt>(&nbsp;)&nbsp;</tt>' . $this->formatParagraph($content) . '</div>';
+        case 'radio': case 'radio-checked':
+          $prev = $this->getParagraphType($paragraphs[$i-1]);
+          $next = $this->getParagraphType($paragraphs[$i+1]);
+          if ($i == 0 || ($prev != 'radio' && $prev != 'radio-checked')) {
+            $output .= "<ul class='radio'>\n";
+          }
+          
+          $output .= " <li class=";
+          if ($type == 'radio-checked') $output .= '"checked"';
+          else $output .= '"unchecked"';
+          $output .= ">" . $this->formatParagraph($content) . "</li>\n";
+          
+          if ($i == count($paragraphs) - 1 || ($next != 'radio' && $next != 'radio-checked')) {
+            $output .= "</ul>\n";
+          }
 	      break;
         case 'imagelink':
           $matches = preg_match('/.*(ht.p).*/i', $content);
