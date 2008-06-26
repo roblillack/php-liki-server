@@ -1,12 +1,15 @@
 INSTALLATION
 
 * Make sure you have a PHP & MySQL enabled apache server with mod_rewrite.
-* Get the software from it's darcs-repository at http://devel.burningsoda.com/darcs/liki/
+* Get the software from it's git repository at http://code.burningsoda.com/liki/
+  by issuing: git clone http://code.burningsoda.com/liki <MY-LIKI-DIR>
 * Adjust the database settings in config.php
 * If the directory where you install the software on your webserver is not
   /liki you need to tinker with the supplied .htaccess file, too.
 * Make sure pix/ (or whatever your dataDir is called---see config.php)
   is writable by your web server. (ie. chmod a+rwx pix)
-* The table specified in config.php will be created on first startup.
+* Run:
+  php -r 'require("bsLikiBackend.class.php");$b=new bsLikiBackend();$b->createTables();'
+  to setup the tables in your database.
 * ...and Play!
 
