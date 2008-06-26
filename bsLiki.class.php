@@ -409,6 +409,13 @@ class bsLiki {
     $p = preg_replace('/(^|[^\\\\])\[\[?([^\'\"\]\[\%\s\/\\\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/', '$1<a class="internal" href="' . $this->baseUrl . '/$2'.$legacy.'">$3</a>', $p);
     // colors
     $p = preg_replace('/\{(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow|#[0-9a-f]{3}([0-9a-f]{3})?)\ (.*?[^\\\\])\}/i', '<span style="color:$1;">$3</span>', $p);
+    // embedded images
+    $p = preg_replace('/{img(&gt;|R)\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/',
+                      '<img src="$2" style="float:right;" />', $p);
+    $p = preg_replace('/{img\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/',
+                      '<img src="$1" />', $p);
+    $p = preg_replace('/{img(&lt;|L)\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/',
+                      '<img src="$2" style="float:left;" />', $p);
     // forced line breaks
     $p = preg_replace('/\ \/\/\ *[\r\n]/', "<br />", $p);
     // escaping

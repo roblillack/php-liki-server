@@ -316,6 +316,14 @@ th {
 
 
 /* --- content --- */
+#viewcontent > h1,
+#viewcontent > h2,
+#viewcontent > pre,
+#viewcontent > blockquote,
+#viewcontent > div,
+#viewcontent > hr {
+  clear: both;
+}
 #viewcontent > h1  {
   position: relative;
   top: 0px;
