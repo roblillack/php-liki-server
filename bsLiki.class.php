@@ -16,6 +16,7 @@ class bsLiki {
   var $dataDir = 'data';
   var $maximalPictureWidth = false;
   var $likiTitle = 'The Liki';
+  var $passwordSeed = '';
 
   function noCache() {
     header("Content-type: text/html; charset=UTF-8");
@@ -132,7 +133,7 @@ class bsLiki {
 		if (!isset($_SERVER['PHP_AUTH_USER']) ||
 		    !isset($_SERVER['PHP_AUTH_PW']) ||
 		    $_SERVER['PHP_AUTH_USER'] !== $this->username ||
-		    md5($_SERVER['PHP_AUTH_PW']) !== $this->password) {
+		    md5($this->passwordSeed.$_SERVER['PHP_AUTH_PW']) !== $this->password) {
 			header('WWW-Authenticate: Basic realm="'.addslashes($this->likiTitle).'"');
 			header('HTTP/1.0 401 Unauthorized');
 			print("<html><h1>Access denied.</h1></html>\n");
@@ -725,7 +726,7 @@ class bsLiki {
           if (isset($_POST['username']) && isset($_POST['password'])) {
             // got username/password
             if ($_POST['username'] === $this->username &&
-                md5($_POST['password']) === $this->password) {
+                md5($this->passwordSeed . $_POST['password']) === $this->password) {
               // combination is right
               $_SESSION['loggedin'] = 'yes';
               session_write_close();
