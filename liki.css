@@ -90,7 +90,7 @@ a#likititle {
   font-style: normal;
   color: #ccc;
   z-index: 50;
-  font-family: Georgia,serif;
+  font-family: Georgia, serif;
   font-size: 30px;
   font-style: italic;
   padding-top: 70px;
@@ -367,8 +367,12 @@ th {
   font-style: italic;
 }
 
-#viewcontent pre {
+#viewcontent code, #viewcontent pre {
   font-family: monospace;
+  color: #008;
+}
+
+#viewcontent pre {
   background-color: #eef;
 }
 

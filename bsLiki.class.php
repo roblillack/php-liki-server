@@ -398,6 +398,7 @@ class bsLiki {
     $p = preg_replace('/(\W|^)\*(\S[\S\ ]*?\S)\*(?=(\W|$))/', '$1<strong>$2</strong>', $p);
     $p = preg_replace('/(\W|^)\-(\S[\S\ ]*?\S)\-(?=(\W|$))/', '$1<s>$2</s>', $p);
     $p = preg_replace('/(\W|^)\_(\S[\S\ ]*?\S)\_(?=(\W|$))/', '$1<em>$2</em>', $p);
+    $p = preg_replace('/(\W|^)\`(\S[\S\ ]*?\S)\`(?=(\W|$))/', '$1<code>$2</code>', $p);
     // externe links
     $p = preg_replace('/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/', '$1<a class="external" href="$2">$2</a>', $p);
     // externe links (mit text)

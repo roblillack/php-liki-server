@@ -289,10 +289,11 @@ function formatParagraph(p) {
   // some symbols
   p = p.replace(/(^|[^-])--(?=([^-]|$))/g, '$1&ndash;');
   p = p.replace(/(^|[^-])---(?=([^-]|$))/g, '$1&mdash;');
-  // _emphasized_, *bold*, -striked-
+  // _emphasized_, *bold*, -striked-, `code`
   p = p.replace(/(\W|^)\*(\S[\S\ ]*?\S)\*(?=(\W|$))/g, '$1<strong>$2</strong>');
   p = p.replace(/(\W|^)\-(\S[\S\ ]*?\S)\-(?=(\W|$))/g, '$1<s>$2</s>');
   p = p.replace(/(\W|^)\_(\S[\S\ ]*?\S)\_(?=(\W|$))/g, '$1<em>$2</em>');
+  p = p.replace(/(\W|^)\`(\S[\S\ ]*?\S)\`(?=(\W|$))/g, '$1<code>$2</code>');
   // externe links
   p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/g, '$1<a class="external" href="$2">$2</a>');
   // externe links (mit text)
