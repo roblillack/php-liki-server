@@ -67,6 +67,7 @@ a.music:hover {
 #viewcontent {
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 #viewcontent > h1,
