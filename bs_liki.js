@@ -159,12 +159,26 @@ function formatContent(input) {
   // lines
   input = input.replace(/(^|\n)---+\ *\n/g, '$1---\n\n');
   // now, split it up.
-  p = input.replace(/^\s*/,'').split(/\n\s*\n/);
-
+  var p = input.replace(/^\s*/,'').split(/\n\s*\n/);
   input = "";
+  var insidesection = false;
+  
   for (var i = 0; i < p.length; i++) {
     var type = getParagraphType(p[i]);
     var content = cleanParagraph(p[i]);
+    
+    if (type == '*' || type == '#') {
+      if (insidesection) {
+        input += "</span>\n";
+        insidesection = false;
+      }
+    } else {
+      if (!insidesection) {
+        input += "<span class='section'>\n";
+        insidesection = true;
+      }
+    }
+
     switch (type) {
       case '':
         // normal text paragraphs
@@ -201,17 +215,35 @@ function formatContent(input) {
       case '|':
         input += '<p style="text-align: center;">' + formatParagraph(content) + '</p>\n';
         break;
-      case 'check-checked':
-        input += '<div><tt>[X]&nbsp;</tt><s>' + formatParagraph(content) + '</s></div>';
-        break;
       case 'check':
-        input += '<div><tt>[&nbsp;]&nbsp;</tt>' + formatParagraph(content) + '</div>';
-        break;
-      case 'radio-checked':
-        input += '<div><tt>(*)&nbsp;</tt><strong>' + formatParagraph(content) + '</strong></div>';
+      case 'check-checked':
+        var prev = getParagraphType(p[i-1]);
+        var next = getParagraphType(p[i+1]);
+        if (i == 0 || (prev != 'check' && prev != 'check-checked')) {
+          input += "<ul class='check'>\n";
+        }
+        input += " <li class=";
+        if (type == 'check-checked') input += '"checked"';
+        else input += '"unchecked"';
+        input += ">" + formatParagraph(content) + "</li>\n";
+        if (i == p.length - 1 || (next != 'check' && next != 'check-checked')) {
+          input += "</ul>\n";
+        }
         break;
       case 'radio':
-        input += '<div><tt>(&nbsp;)&nbsp;</tt>' + formatParagraph(content) + '</div>';
+      case 'radio-checked':
+        var prev = getParagraphType(p[i-1]);
+        var next = getParagraphType(p[i+1]);
+        if (i == 0 || (prev != 'radio' && prev != 'radio-checked')) {
+          input += "<ul class='radio'>\n";
+        }
+        input += " <li class=";
+        if (type == 'radio-checked') input += '"checked"';
+        else input += '"unchecked"';
+        input += ">" + formatParagraph(content) + "</li>\n";
+        if (i == p.length - 1 || (next != 'radio' && next != 'radio-checked')) {
+          input += "</ul>\n";
+        }
         break;
       case 'imagelink':
         matches = content.match(/^\[(\S+)\s+(\S+)\]\s*$/)
