@@ -6,6 +6,10 @@ body {
 	-webkit-text-size-adjust:none;		  /* Turn off font resizing */
 }
 
+#visitbar, #navibar, #toolbar, #status, #uploadiframe, #contenteditor {
+  display: none;
+}
+
 table {
   margin-left: auto;
   margin-right: auto;
