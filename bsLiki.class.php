@@ -16,6 +16,7 @@ class bsLiki {
   var $dataDir = 'data';
   var $maximalPictureWidth = false;
   var $likiTitle = 'The Liki';
+  var $passwordSeed = '';
 
   function noCache() {
     header("Content-type: text/html; charset=UTF-8");
@@ -132,7 +133,7 @@ class bsLiki {
 		if (!isset($_SERVER['PHP_AUTH_USER']) ||
 		    !isset($_SERVER['PHP_AUTH_PW']) ||
 		    $_SERVER['PHP_AUTH_USER'] !== $this->username ||
-		    md5($_SERVER['PHP_AUTH_PW']) !== $this->password) {
+		    md5($this->passwordSeed.$_SERVER['PHP_AUTH_PW']) !== $this->password) {
 			header('WWW-Authenticate: Basic realm="'.addslashes($this->likiTitle).'"');
 			header('HTTP/1.0 401 Unauthorized');
 			print("<html><h1>Access denied.</h1></html>\n");
@@ -397,6 +398,7 @@ class bsLiki {
     $p = preg_replace('/(\W|^)\*(\S[\S\ ]*?\S)\*(?=(\W|$))/', '$1<strong>$2</strong>', $p);
     $p = preg_replace('/(\W|^)\-(\S[\S\ ]*?\S)\-(?=(\W|$))/', '$1<s>$2</s>', $p);
     $p = preg_replace('/(\W|^)\_(\S[\S\ ]*?\S)\_(?=(\W|$))/', '$1<em>$2</em>', $p);
+    $p = preg_replace('/(\W|^)\`(\S[\S\ ]*?\S)\`(?=(\W|$))/', '$1<code>$2</code>', $p);
     // externe links
     $p = preg_replace('/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/', '$1<a class="external" href="$2">$2</a>', $p);
     // externe links (mit text)
@@ -409,6 +411,13 @@ class bsLiki {
     $p = preg_replace('/(^|[^\\\\])\[\[?([^\'\"\]\[\%\s\/\\\\]+)\ ([\S][\S\ ]*?[\S]+)\]?\]/', '$1<a class="internal" href="' . $this->baseUrl . '/$2'.$legacy.'">$3</a>', $p);
     // colors
     $p = preg_replace('/\{(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow|#[0-9a-f]{3}([0-9a-f]{3})?)\ (.*?[^\\\\])\}/i', '<span style="color:$1;">$3</span>', $p);
+    // embedded images
+    $p = preg_replace('/{img(&gt;|R)\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/',
+                      '<img src="$2" style="float:right;" />', $p);
+    $p = preg_replace('/{img\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/',
+                      '<img src="$1" />', $p);
+    $p = preg_replace('/{img(&lt;|L)\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/',
+                      '<img src="$2" style="float:left;" />', $p);
     // forced line breaks
     $p = preg_replace('/\ \/\/\ *[\r\n]/', "<br />", $p);
     // escaping
@@ -752,7 +761,7 @@ class bsLiki {
           if (isset($_POST['username']) && isset($_POST['password'])) {
             // got username/password
             if ($_POST['username'] === $this->username &&
-                md5($_POST['password']) === $this->password) {
+                md5($this->passwordSeed . $_POST['password']) === $this->password) {
               // combination is right
               $_SESSION['loggedin'] = 'yes';
               session_write_close();

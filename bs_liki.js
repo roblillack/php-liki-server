@@ -321,10 +321,11 @@ function formatParagraph(p) {
   // some symbols
   p = p.replace(/(^|[^-])--(?=([^-]|$))/g, '$1&ndash;');
   p = p.replace(/(^|[^-])---(?=([^-]|$))/g, '$1&mdash;');
-  // _emphasized_, *bold*, -striked-
+  // _emphasized_, *bold*, -striked-, `code`
   p = p.replace(/(\W|^)\*(\S[\S\ ]*?\S)\*(?=(\W|$))/g, '$1<strong>$2</strong>');
   p = p.replace(/(\W|^)\-(\S[\S\ ]*?\S)\-(?=(\W|$))/g, '$1<s>$2</s>');
   p = p.replace(/(\W|^)\_(\S[\S\ ]*?\S)\_(?=(\W|$))/g, '$1<em>$2</em>');
+  p = p.replace(/(\W|^)\`(\S[\S\ ]*?\S)\`(?=(\W|$))/g, '$1<code>$2</code>');
   // externe links
   p = p.replace(/([\s]|^)(http\:\/\/[^\s\"\'\(\)\[\]\{\}]+)(?=(\s|$))/g, '$1<a class="external" href="$2">$2</a>');
   // externe links (mit text)
@@ -339,6 +340,14 @@ function formatParagraph(p) {
   // colors
   p = p.replace(/\{(aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|purple|red|silver|teal|white|yellow|#[0-9a-f]{3}([0-9a-f]{3})?)\ (.*?[^\\])\}/gi,
                 '<span style="color:$1;">$3</span>');
+  // embedded images
+  p = p.replace(/{img(&gt;|R)\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/gi,
+                '<img src="$2" style="float:right;" />');
+  p = p.replace(/{img\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/gi,
+                '<img src="$1" />');
+  p = p.replace(/{img(&lt;|L)\s+(http\:\/\/[^\s\"\'}]+\.(bmp|gif|jpg|jpeg|png))\s*}/gi,
+                '<img src="$2" style="float:left;" />');
+
   // forced line breaks
   p = p.replace(/\ \/\/\ *[\r\n]/g, "<br />");
   // escaping
