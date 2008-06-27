@@ -54,7 +54,12 @@ $l->sendHeaders();
    <a accessKey="i" href="<?php echo $l->baseUrl;?>/INDEX<?php if ($l->legacyMode) echo "/legacy"; ?>"><u>i</u>ndex</a>,
    recently changed: <span id="recentchanges"></span>
   </div>
-  <div id='viewcontent'></div>
+  <div id='viewcontent'>
+  <?php
+    $p = $l->getFormattedPage($l->activePage);
+    echo $p['content'];
+  ?>
+  </div>
   <div id='status'></div>
   <iframe id="uploadiframe" src="<?php echo $l->baseUrl;?>/<?php echo $l->activePage;?>?action=uploadform" />
 <?php } ?>
