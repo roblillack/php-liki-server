@@ -13,6 +13,7 @@ class bsLiki {
   var $passwordProtected = false;
   var $username = '';
   var $password = '';
+  var $users = array();
   var $dataDir = 'data';
   var $maximalPictureWidth = false;
   var $likiTitle = 'The Liki';
@@ -128,12 +129,11 @@ class bsLiki {
   function sendRSSFeed() {
 	if ($this->passwordProtected) {
 		/* As there's no login panel for RSS feeds, we use HTTP Basic auth here. */
-		if (empty($this->username) || strlen($this->password) !== 32)
+		if (count($this->users) < 1 && (empty($this->username) || strlen($this->password) !== 32))
 			die("Username or Password misconfigured.");
 		if (!isset($_SERVER['PHP_AUTH_USER']) ||
 		    !isset($_SERVER['PHP_AUTH_PW']) ||
-		    $_SERVER['PHP_AUTH_USER'] !== $this->username ||
-		    md5($this->passwordSeed.$_SERVER['PHP_AUTH_PW']) !== $this->password) {
+		    !$this->checkPassword($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) {
 			header('WWW-Authenticate: Basic realm="'.addslashes($this->likiTitle).'"');
 			header('HTTP/1.0 401 Unauthorized');
 			print("<html><h1>Access denied.</h1></html>\n");
@@ -721,6 +721,18 @@ class bsLiki {
     $this->quit();
   }
   
+  function checkPassword($username, $password) {
+	foreach ($this->users as $u => $p)
+	  if ($username === $u && md5($this->passwordSeed . $password) === $p)
+	    return true;
+	
+	if ($username === $this->username &&
+	    md5($this->passwordSeed . $password) === $this->password)
+	  return true;
+	
+	return false;
+  }
+  
   function bsLiki() {
     require("config.php");
     if ($this->baseUrl === false) {
@@ -738,7 +750,7 @@ class bsLiki {
     if ($this->passwordProtected === true) {
       // ok, secure this one
       
-      if (empty($this->username) || strlen($this->password) != 32) {
+      if (count($this->users) < 1 && (empty($this->username) || strlen($this->password) != 32)) {
         die('User/Password not correctly configured.');
       }
       
@@ -760,8 +772,7 @@ class bsLiki {
           // is a "interactive" request
           if (isset($_POST['username']) && isset($_POST['password'])) {
             // got username/password
-            if ($_POST['username'] === $this->username &&
-                md5($this->passwordSeed . $_POST['password']) === $this->password) {
+            if ($this->checkPassword($_POST['username'], $_POST['password'])) {
               // combination is right
               $_SESSION['loggedin'] = 'yes';
               session_write_close();
