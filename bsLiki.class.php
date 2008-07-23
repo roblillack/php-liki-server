@@ -857,7 +857,7 @@ class bsLiki {
       if (!$this->specialPage)
         $this->backend->visitPage($this->activePage);
       header('X-LIKI-Timestamp: '.$p['timestamp_change']);
-      if ($p['lockkey'] === true || strlen($p['lockkey']) > 5)
+      if (array_key_exists('lockkey', $p) && ($p['lockkey'] === true || strlen($p['lockkey']) > 5))
         header('X-LIKI-Locked: yes');
       header('Content-type: text/html; charset=UTF-8');
       // this is just a fix for a safari/konqueror bug.
