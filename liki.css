@@ -382,6 +382,27 @@ th {
   border-top: 1px solid #ccc;
 }
 
+.section > ul.radio,
+.section > ul.check {
+	list-style-type: none;
+	border: 0;
+	margin: 5px;
+	padding: 0;
+}
+
+.section > ul.radio > li,
+.section > ul.check > li {
+	padding-left: 16px;
+	background-repeat: no-repeat;
+	background-image: url(notdone.png);
+	margin: 2px;
+}
+
+.section > ul.radio > li.checked,
+.section > ul.check > li.checked {
+	background-image: url(done.png);
+}
+
 .centerpic {
   display: block;
   max-width: 98%;
